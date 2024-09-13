@@ -1,6 +1,6 @@
 #define DUCKDB_EXTENSION_MAIN
 
-#include "quack_extension.hpp"
+#include "rest_api_extension_extension.hpp"
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string_util.hpp"
@@ -8,6 +8,7 @@
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/extension_util.hpp"
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
+#include <api_request.hpp>
 
 // OpenSSL linked through vcpkg
 #include <openssl/opensslv.h>
@@ -66,7 +67,10 @@ static void simple_table_function(ClientContext &context, TableFunctionInput &da
     auto rows = GetStaticTestData();
  
     output.SetCardinality(rows.size());
- 
+    auto api_url = get_env_string("API_URL");
+
+    std::cout << "API_URL: " << api_url << std::endl;
+
     // Fill the output with data from the current row onward
     for (idx_t row_idx = 0; row_idx < rows.size(); row_idx++) {
         // Fill the DataChunk
@@ -87,21 +91,21 @@ static void simple_table_function(ClientContext &context, TableFunctionInput &da
 }
  
 
-inline void QuackScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
+inline void RestApiExtensionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
     auto &name_vector = args.data[0];
     UnaryExecutor::Execute<string_t, string_t>(
 	    name_vector, result, args.size(),
 	    [&](string_t name) {
-			return StringVector::AddString(result, "Quack "+name.GetString()+" 🐥");;
+			return StringVector::AddString(result, "RestApiExtension "+name.GetString()+" 🐥");;
         });
 }
 
-inline void QuackOpenSSLVersionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
+inline void RestApiExtensionOpenSSLVersionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
     auto &name_vector = args.data[0];
     UnaryExecutor::Execute<string_t, string_t>(
 	    name_vector, result, args.size(),
 	    [&](string_t name) {
-			return StringVector::AddString(result, "Quack " + name.GetString() +
+			return StringVector::AddString(result, "RestApiExtension " + name.GetString() +
                                                      ", my linked OpenSSL version is " +
                                                      OPENSSL_VERSION_TEXT );;
         });
@@ -109,29 +113,29 @@ inline void QuackOpenSSLVersionScalarFun(DataChunk &args, ExpressionState &state
 
 static void LoadInternal(DatabaseInstance &instance) {
     // Register a scalar function
-    auto quack_scalar_function = ScalarFunction("quack", {LogicalType::VARCHAR}, LogicalType::VARCHAR, QuackScalarFun);
-    ExtensionUtil::RegisterFunction(instance, quack_scalar_function);
+    auto rest_api_extension_scalar_function = ScalarFunction("rest_api_extension", {LogicalType::VARCHAR}, LogicalType::VARCHAR, RestApiExtensionScalarFun);
+    ExtensionUtil::RegisterFunction(instance, rest_api_extension_scalar_function);
 
     // Register another scalar function
-    auto quack_openssl_version_scalar_function = ScalarFunction("quack_openssl_version", {LogicalType::VARCHAR},
-                                                LogicalType::VARCHAR, QuackOpenSSLVersionScalarFun);
-    ExtensionUtil::RegisterFunction(instance, quack_openssl_version_scalar_function);
+    auto rest_api_extension_openssl_version_scalar_function = ScalarFunction("rest_api_extension_openssl_version", {LogicalType::VARCHAR},
+                                                LogicalType::VARCHAR, RestApiExtensionOpenSSLVersionScalarFun);
+    ExtensionUtil::RegisterFunction(instance, rest_api_extension_openssl_version_scalar_function);
 
     TableFunction simple_table_func("simple_table", {}, simple_table_function, simple_bind, simple_init);
     ExtensionUtil::RegisterFunction(instance, simple_table_func);
 
 }
 
-void QuackExtension::Load(DuckDB &db) {
+void RestApiExtensionExtension::Load(DuckDB &db) {
 	LoadInternal(*db.instance);
 }
-std::string QuackExtension::Name() {
-	return "quack";
+std::string RestApiExtensionExtension::Name() {
+	return "rest_api_extension";
 }
 
-std::string QuackExtension::Version() const {
-#ifdef EXT_VERSION_QUACK
-	return EXT_VERSION_QUACK;
+std::string RestApiExtensionExtension::Version() const {
+#ifdef EXT_VERSION_REST_API_EXTENSION
+	return EXT_VERSION_REST_API_EXTENSION;
 #else
 	return "";
 #endif
@@ -141,12 +145,12 @@ std::string QuackExtension::Version() const {
 
 extern "C" {
 
-DUCKDB_EXTENSION_API void quack_init(duckdb::DatabaseInstance &db) {
+DUCKDB_EXTENSION_API void rest_api_extension_init(duckdb::DatabaseInstance &db) {
     duckdb::DuckDB db_wrapper(db);
-    db_wrapper.LoadExtension<duckdb::QuackExtension>();
+    db_wrapper.LoadExtension<duckdb::RestApiExtensionExtension>();
 }
 
-DUCKDB_EXTENSION_API const char *quack_version() {
+DUCKDB_EXTENSION_API const char *rest_api_extension_version() {
 	return duckdb::DuckDB::LibraryVersion();
 }
 }

@@ -1,0 +1,23 @@
+# name: test/sql/rest_api_extension.test
+# description: test rest_api_extension extension
+# group: [rest_api_extension]
+
+# Before we load the extension, this will fail
+statement error
+SELECT rest_api_extension('Sam');
+----
+Catalog Error: Scalar Function with name rest_api_extension does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require rest_api_extension
+
+# Confirm the extension works
+query I
+SELECT rest_api_extension('Sam');
+----
+RestApiExtension Sam 🐥
+
+query I
+SELECT rest_api_extension_openssl_version('Michael') ILIKE 'RestApiExtension Michael, my linked OpenSSL version is OpenSSL%';
+----
+true
