@@ -9,13 +9,50 @@
 #include "duckdb/main/extension_util.hpp"
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 #include <api_request.hpp>
+#include "duckdb/planner/operator/logical_filter.hpp"
+#include "duckdb/common/types/value.hpp"
+#include "duckdb/function/table_function.hpp"
+#include "duckdb/planner/filter/conjunction_filter.hpp"
+#include "duckdb/planner/filter/constant_filter.hpp"
+#include "duckdb/planner/operator/logical_get.hpp"
+#include "duckdb/planner/expression/bound_constant_expression.hpp"
+// #include "duckdb/planner/expression/bound_limit_expression.hpp"
+#include "duckdb/planner/expression.hpp"
+#include "duckdb/planner/expression/bound_reference_expression.hpp"
+// #include "duckdb/planner/expression/bound_order_expression.hpp"
+// #include "duckdb/optimizer/statistics/node_statistics.hpp"
+#include "nlohmann/json.hpp" 
+#include <algorithm> // For std::find_if
+
+
+
+
 
 // OpenSSL linked through vcpkg
 #include <openssl/opensslv.h>
 
+// using namespace std;
+using json = nlohmann::json;
+
 namespace duckdb {
 
- 
+
+ConfigItem* findConfigByName(ConfigList& configList, const std::string& name) {
+    // Use std::find_if to find the ConfigItem with the specified name
+    auto it = std::find_if(configList.begin(), configList.end(),
+        [&name](const ConfigItem& item) {
+            return item.name == name;
+        });
+
+    // Check if we found the item
+    if (it != configList.end()) {
+        return  &(*it); // Return a pointer to the config if found
+        // return &it->config; // Return a pointer to the config if found
+    } else {
+        return nullptr; // Return nullptr if not found
+    }
+}
+
 // Mock static data to return
 std::vector<std::vector<Value>> GetStaticTestData() {
     return {
@@ -29,48 +66,264 @@ struct SimpleData : public GlobalTableFunctionState {
     SimpleData() : offset(0) {
     }
     idx_t offset;
+    optional_ptr<TableFilterSet> filters;
+    vector<column_t> column_ids;    
 };
 
+// Function to parse JSON string into a vector of key-value pairs
+std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str) {
+    std::vector<std::pair<std::string, std::string>> options;
+
+    // Parse the JSON string
+    json parsed_json;
+    try {
+        parsed_json = json::parse(json_str);
+    } catch (const json::parse_error &e) {
+        throw std::invalid_argument(std::string("Failed to parse JSON options: ") + e.what());
+    }
+
+    // Ensure the JSON is an object
+    if (!parsed_json.is_object()) {
+        throw std::invalid_argument("JSON options must be an object with key-value pairs.");
+    }
+
+    // Iterate through the JSON object and populate the options vector
+    for (auto it = parsed_json.begin(); it != parsed_json.end(); ++it) {
+        if (!it.value().is_string()) {
+            throw std::invalid_argument("All values in JSON options must be strings.");
+        }
+        options.emplace_back(it.key(), it.value().get<std::string>());
+    }
+
+    return options;
+}
+
+struct BindArguments : public TableFunctionData {
+    string item_name;
+    vector<unique_ptr<Expression>> filters;
+    vector<std::pair<string, string>> options;
+    string api;
+    // idx_t estimated_cardinality; // Optional, used for cardinality estimation in statistics
+
+};
+
+
+// static unique_ptr<NodeStatistics> simple_cardinality(ClientContext &context, const FunctionData *bind_data_p) {
+//     auto &bind_data = (BindArguments &)*bind_data_p;
+//     idx_t base_cardinality = 3; // Since our test data has 3 rows
+//     // idx_t estimated_cardinality = std::min(base_cardinality, bind_data.limit);
+
+//     return make_uniq<NodeStatistics>(estimated_cardinality, estimated_cardinality);
+// }
+
+
+static void PushdownComplexFilter(ClientContext &context, LogicalGet &get, FunctionData *bind_data_p,
+                                  vector<unique_ptr<Expression>> &filters) {
+    auto &bind_data = (BindArguments &)*bind_data_p;
+
+    if (!filters.empty()) {
+        std::cout << "Pushing down complex filter! "  << std::endl;
+    } else {
+        std::cout << "No complex filter provided" << std::endl;
+    }
+
+    // Move filters into bind_data for later use
+    for (auto &filter : filters) {
+        std::cout << "Adding filter: " << filter->ToString() << std::endl;
+        bind_data.filters.push_back(std::move(filter));
+    }
+
+    // Clear filters to indicate they have been consumed
+    filters.clear();
+}
+
+
+
 unique_ptr<GlobalTableFunctionState> simple_init(ClientContext &context, TableFunctionInitInput &input) {
+    std::cout << "Initializing Simple Table Function" << std::endl;
+    // loop through the columns
+    for (auto &col : input.column_ids) {
+        std::cout << "Column: " << col << std::endl;
+    }
+
+    for (auto &projection_id : input.projection_ids) {
+        std::cout << "Projection ID: " << projection_id << std::endl;
+    }
+
+    optional_ptr<TableFilterSet> filter_set = input.filters;
+
+    if (filter_set) {
+        for (auto &filter_pair: filter_set->filters) {
+            column_t column_index = filter_pair.first;
+
+            const std::unique_ptr<TableFilter>& filter_ptr = filter_pair.second;
+
+            std::cout << "filter: " << static_cast<int>(filter_ptr->filter_type) << std::endl;
+
+        }
+    }
+
     auto result = make_uniq<SimpleData>();
+    result->offset = 0;
+    result->filters = input.filters;
+    result->column_ids = input.column_ids;
     return std::move(result);
 }
  
 // Bind function to define schema
 static unique_ptr<FunctionData> simple_bind(ClientContext &context, TableFunctionBindInput &input, vector<LogicalType> &return_types, vector<string> &names) {
     // Define the columns of the table
-    names.push_back("id");
+    // Create a bind data structure and store the item_name
+    auto bind_data = make_uniq<BindArguments>();
+    //bind_data->item_name = input.inputs[0].ToString(); // First argument is 'item_name'
+    bind_data->filters = vector<unique_ptr<Expression>>();
+
+    for (auto &kv : input.named_parameters) {
+        auto loption = StringUtil::Lower(kv.first);
+        std::cout << "Found named parameter: " << loption << " = " << kv.second.ToString() << std::endl;
+        if (loption == "options") {
+            std::string json_str = kv.second.GetValue<std::string>();
+            if (!json_str.empty()) {
+                bind_data->options = ParseOptionsFromJSON(json_str);
+                for (auto &option : bind_data->options) {
+                    std::cout << "Option: " << option.first << " = " << option.second << std::endl;
+                }
+            }
+        }
+
+        if (loption == "api") {
+            bind_data->api = kv.second.GetValue<std::string>();
+            std::cout << "API: " << bind_data->api << std::endl;
+        }
+    }
+
+
+
+
+    std::cout << "Binding Simple Table Function" << std::endl;
+
+    // for (auto &expression : input.inputs) {
+    //     if (expression.type().id() == LogicalTypeId::VARCHAR) {
+    //         std::cout << "item_name: " << expression.ToString() << std::endl;
+    //     }
+    // }
+
+    // Capture limit from named parameters
+    // if (input.named_parameters.find("limit") != input.named_parameters.end()) {
+    //     bind_data->limit = input.named_parameters["limit"].GetValue<idx_t>();
+    // }
+
+    // Capture order_by from named parameters
+    // auto order_by_entry = input.named_parameters.find("order_by");
+    // if (order_by_entry != input.named_parameters.end()) {
+    //     auto order_by = StringValue::Get(order_by_entry->second);
+    //     std::cout << "have order_by: " << order_by << std::endl;
+    //     bind_data->order_by = order_by;
+    // } else {
+    //     std::cout << "No order_by provided" << std::endl;
+    // }
+
+    // auto &column_ids = input.named_parameters["projected_columns"].GetValue<vector<column_t>>();
+
+         std::cout << "Examining TableFunctionBindInput:" << std::endl;
+
+        // Print named_parameters
+        std::cout << "named_parameters:" << std::endl;
+        if (!input.named_parameters.empty()) {
+            for (const auto& param : input.named_parameters) {
+                std::cout << "  " << param.first << ": " << param.second.ToString() << std::endl;
+            }
+        } else {
+            std::cout << "  (empty)" << std::endl;
+        }
+
+        std::cout << std::endl;
+
+    // Ensure there is at least one argument
+    // if (input.inputs.size() < 1) {
+    //     throw std::runtime_error("Expected at least one argument");
+    // }
+
+
+
+
+    names.push_back("pid");
     return_types.push_back(LogicalType::INTEGER);
  
-    names.push_back("name");
+    names.push_back("pname");
     return_types.push_back(LogicalType::VARCHAR);
  
     names.push_back("age");
     return_types.push_back(LogicalType::INTEGER);
  
-    return nullptr;  // No additional data needed
+    // return nullptr;  // No additional data needed
+    return std::move(bind_data); 
 }
  
-// Initialize function operator data (state)
 
- 
-// Table function to return static data, with proper state management
 static void simple_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
 
+    auto cfg = load_config();
+
     auto &data_p = data.global_state->Cast<SimpleData>();
+
     idx_t data_queries = 1;
     if (data_p.offset >= data_queries) {
         return;
     }
 
+    
+    
+
+    auto &bind_data = (BindArguments &)*data.bind_data;
+    auto &filters = data_p.filters;
+    auto &column_ids = data_p.column_ids;
+
+    auto &options = bind_data.options;
+    auto &api = bind_data.api;
+
+    if (!options.empty()) {
+        std::cout << "JEEJ!! Options: " << std::endl;
+        for (auto &option : options) {
+            std::cout << "  " << option.first << " = " << option.second << std::endl;
+        }
+    }
+
+    if (api.empty()) {
+        std::cerr << "No API provided. Skipping rest call." << std::endl;
+        return;
+    } else {
+        std::cout << "querying API: " << api << std::endl;
+    }
+    
+
+    auto config = findConfigByName(cfg, api) ;
+
+    if (!config) {
+        std::cerr << "No configuration found for API: " << api << std::endl;
+        return;
+    } else {
+        std::cout << "Using configuration: " << config->name << std::endl;
+        std::cout << "host: " << config->config.host << std::endl;
+    }
+
+    std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.data.uri;
+
+    std::cout << "API URL: " << api_url << std::endl;
+
+    std::string response_body = query_api(api_url, "");
+
+    std::cout << "Response Body: " << response_body << std::endl;
+
+    //auto api_data = query_api(api_url, config->config);
+
+
     // Get the static test data
     auto rows = GetStaticTestData();
- 
     output.SetCardinality(rows.size());
-    auto api_url = get_env_string("API_URL");
+    // auto api_url = get_env_string("API_URL");
 
-    std::cout << "API_URL: " << api_url << std::endl;
-
+    // std::cout << "API_URL: " << api_url << std::endl;
     // Fill the output with data from the current row onward
     for (idx_t row_idx = 0; row_idx < rows.size(); row_idx++) {
         // Fill the DataChunk
@@ -79,16 +332,10 @@ static void simple_table_function(ClientContext &context, TableFunctionInput &da
         output.SetValue(2, row_idx, rows[row_idx][2]); // age
     }
 
+
     data_p.offset++;
- 
-    // // Update the current row index
-    // state.current_row += max_rows;
- 
-    // // If all rows are processed, signal DuckDB that no more rows are available
-    // if (state.current_row >= rows.size()) {
-    //     output.SetCardinality(0); // No more rows
-    // }
 }
+
  
 
 inline void RestApiExtensionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -121,7 +368,18 @@ static void LoadInternal(DatabaseInstance &instance) {
                                                 LogicalType::VARCHAR, RestApiExtensionOpenSSLVersionScalarFun);
     ExtensionUtil::RegisterFunction(instance, rest_api_extension_openssl_version_scalar_function);
 
-    TableFunction simple_table_func("simple_table", {}, simple_table_function, simple_bind, simple_init);
+    auto simple_table_func = TableFunction("simple_table", {}, simple_table_function, simple_bind, simple_init);
+    // simple_table_func.filter_pushdown = false;
+    // simple_table_func.projection_pushdown = false;    
+    // simple_table_func.cardinality = simple_cardinality;
+    // simple_table_func.pushdown_complex_filter = PushdownComplexFilter;
+
+    simple_table_func.named_parameters["order_by"] = LogicalType::VARCHAR;
+    simple_table_func.named_parameters["limit"] = LogicalType::VARCHAR;
+    simple_table_func.named_parameters["columns"] = LogicalType::VARCHAR;
+    simple_table_func.named_parameters["options"] = LogicalType::VARCHAR;
+    simple_table_func.named_parameters["api"] = LogicalType::VARCHAR;
+
     ExtensionUtil::RegisterFunction(instance, simple_table_func);
 
 }
