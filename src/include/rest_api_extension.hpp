@@ -4,7 +4,7 @@
 
 namespace duckdb {
 
-class RestApiExtensionExtension : public Extension {
+class RestApiExtension : public Extension {
 public:
 	void Load(DuckDB &db) override;
 	std::string Name() override;

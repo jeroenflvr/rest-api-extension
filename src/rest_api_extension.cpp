@@ -476,21 +476,21 @@ static void simple_table_function(ClientContext &context, TableFunctionInput &da
 
  
 
-inline void RestApiExtensionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
+inline void RestApiScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
     auto &name_vector = args.data[0];
     UnaryExecutor::Execute<string_t, string_t>(
 	    name_vector, result, args.size(),
 	    [&](string_t name) {
-			return StringVector::AddString(result, "RestApiExtension "+name.GetString()+" 🐥");;
+			return StringVector::AddString(result, "RestApi "+name.GetString()+" 🐥");;
         });
 }
 
-inline void RestApiExtensionOpenSSLVersionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
+inline void RestApiOpenSSLVersionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
     auto &name_vector = args.data[0];
     UnaryExecutor::Execute<string_t, string_t>(
 	    name_vector, result, args.size(),
 	    [&](string_t name) {
-			return StringVector::AddString(result, "RestApiExtension " + name.GetString() +
+			return StringVector::AddString(result, "RestApi " + name.GetString() +
                                                      ", my linked OpenSSL version is " +
                                                      OPENSSL_VERSION_TEXT );;
         });
@@ -498,13 +498,13 @@ inline void RestApiExtensionOpenSSLVersionScalarFun(DataChunk &args, ExpressionS
 
 static void LoadInternal(DatabaseInstance &instance) {
     // Register a scalar function
-    auto rest_api_extension_scalar_function = ScalarFunction("rest_api_extension", {LogicalType::VARCHAR}, LogicalType::VARCHAR, RestApiExtensionScalarFun);
-    ExtensionUtil::RegisterFunction(instance, rest_api_extension_scalar_function);
+    auto rest_api_scalar_function = ScalarFunction("rest_api", {LogicalType::VARCHAR}, LogicalType::VARCHAR, RestApiScalarFun);
+    ExtensionUtil::RegisterFunction(instance, rest_api_scalar_function);
 
     // Register another scalar function
-    auto rest_api_extension_openssl_version_scalar_function = ScalarFunction("rest_api_extension_openssl_version", {LogicalType::VARCHAR},
-                                                LogicalType::VARCHAR, RestApiExtensionOpenSSLVersionScalarFun);
-    ExtensionUtil::RegisterFunction(instance, rest_api_extension_openssl_version_scalar_function);
+    auto rest_api_openssl_version_scalar_function = ScalarFunction("rest_api_openssl_version", {LogicalType::VARCHAR},
+                                                LogicalType::VARCHAR, RestApiOpenSSLVersionScalarFun);
+    ExtensionUtil::RegisterFunction(instance, rest_api_openssl_version_scalar_function);
 
     auto simple_table_func = TableFunction("query_json_api", {}, simple_table_function, simple_bind, simple_init);
     // simple_table_func.filter_pushdown = false;
@@ -522,16 +522,16 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 }
 
-void RestApiExtensionExtension::Load(DuckDB &db) {
+void RestApiExtension::Load(DuckDB &db) {
 	LoadInternal(*db.instance);
 }
-std::string RestApiExtensionExtension::Name() {
-	return "rest_api_extension";
+std::string RestApiExtension::Name() {
+	return "rest_api";
 }
 
-std::string RestApiExtensionExtension::Version() const {
-#ifdef EXT_VERSION_REST_API_EXTENSION
-	return EXT_VERSION_REST_API_EXTENSION;
+std::string RestApiExtension::Version() const {
+#ifdef EXT_VERSION_REST_API
+	return EXT_VERSION_REST_API;
 #else
 	return "";
 #endif
@@ -541,12 +541,12 @@ std::string RestApiExtensionExtension::Version() const {
 
 extern "C" {
 
-DUCKDB_EXTENSION_API void rest_api_extension_init(duckdb::DatabaseInstance &db) {
+DUCKDB_EXTENSION_API void rest_api_init(duckdb::DatabaseInstance &db) {
     duckdb::DuckDB db_wrapper(db);
-    db_wrapper.LoadExtension<duckdb::RestApiExtensionExtension>();
+    db_wrapper.LoadExtension<duckdb::RestApiExtension>();
 }
 
-DUCKDB_EXTENSION_API const char *rest_api_extension_version() {
+DUCKDB_EXTENSION_API const char *rest_api_version() {
 	return duckdb::DuckDB::LibraryVersion();
 }
 }
