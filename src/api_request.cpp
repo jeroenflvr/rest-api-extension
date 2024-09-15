@@ -28,9 +28,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, host, port, root_uri, endpoints)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ConfigItem, name, config)
 
 
-ConfigList load_config() {
+ConfigList load_config(std::string filename) {
     // TODO: move to config
-    std::ifstream file("/Users/jeroen/projects/rest-api-extension/rest_api_extension.json");
+    std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Unable to open config.json file.\n";
         return {};

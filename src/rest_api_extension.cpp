@@ -134,6 +134,45 @@ namespace duckdb {
         vector<column_t> column_ids;    
     };
 
+
+    std::string GetRestApiConfigFile(ClientContext &context) {
+        // Access the global configuration
+        //auto &config = DBConfig::GetConfig(context);
+        std::string name = "rest_api_config_file";
+        auto &config = DBConfig::GetConfig(context);
+        config.CheckLock(name);
+        auto option = DBConfig::GetOptionByName(name);
+
+        // std::cout << "Option value from config: " << option->get_setting(context) << std::endl;
+
+        if (!option) {
+            // check if this is an extra extension variable
+            auto entry = config.extension_parameters.find(name);
+            if (entry!= config.extension_parameters.end()) {
+                //std::cout << "entry found!!!!!!!!!! " <<  entry->second.default_value.ToString() << std::endl;
+                return entry->second.default_value.ToString();
+            }
+            // if (entry == config.extension_parameters.end()) {
+            //     //Catalog::AutoloadExtensionByConfigName(context.client, name);
+            //     entry = config.extension_parameters.find(name);
+
+            //     //D_ASSERT(entry != config.extension_parameters.end());
+            // }
+        }
+
+        
+        // Return an empty string if the configuration is not set or not found
+        return "";
+    }
+    // void CheckConfigOption(ClientContext &context) {
+    //     // Access DBConfig
+    //     auto config_file = ClientConfig::GetConfig(context).rest_api_config_file;
+
+    //     std::cout << "Option value from config: " << config_file << std::endl;
+
+    // }
+
+
     // Function to parse JSON string into a vector of key-value pairs
     std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str) {
         std::vector<std::pair<std::string, std::string>> options;
@@ -309,8 +348,11 @@ namespace duckdb {
         // if (input.inputs.size() < 1) {
         //     throw std::runtime_error("Expected at least one argument");
         // }
+        // 
+        auto config_file = GetRestApiConfigFile(context);
+        std::cout << "Config file: " << config_file << std::endl;
 
-        auto cfg = load_config();
+        auto cfg = load_config(config_file);
         auto &api = bind_data->api;
         auto config = findConfigByName(cfg, api) ;
 
@@ -357,8 +399,9 @@ namespace duckdb {
     
 
     static void simple_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
+        auto config_file = GetRestApiConfigFile(context);
 
-        auto cfg = load_config();
+        auto cfg = load_config(config_file);
 
         auto &data_p = data.global_state->Cast<SimpleData>();
 
@@ -366,9 +409,6 @@ namespace duckdb {
         if (data_p.offset >= data_queries) {
             return;
         }
-
-        
-        
 
         auto &bind_data = (BindArguments &)*data.bind_data;
         auto &filters = data_p.filters;
@@ -518,13 +558,14 @@ namespace duckdb {
         simple_table_func.named_parameters["api"] = LogicalType::VARCHAR;
 
         ExtensionUtil::RegisterFunction(instance, simple_table_func);
+        
+        auto &config = DBConfig::GetConfig(instance);
 
-    }
-    static void RegisterConfig(DBConfig &config) {
+        // Global HTTP config
+        // Single timeout value is used for all 4 types of timeouts, we could split it into 4 if users need that
+        config.AddExtensionOption("rest_api_config_file", "REST API Config File Location", LogicalType::VARCHAR,
+                                Value("/Users/jeroen/projects/rest-api-extension/rest_api_extension.json"));
 
-        // Register a string configuration option
-        config.AddOption("rest_api_config_file", "Configuration file for REST API",
-                         LogicalType::VARCHAR, Value("~/.rest_api_config.json"));
     }
 
     void RestApiExtension::Load(DuckDB &db) {

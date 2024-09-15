@@ -36,7 +36,7 @@ struct ConfigItem {
 using ConfigList = std::vector<ConfigItem>;
 
 
-ConfigList load_config();
+ConfigList load_config(std::string filename);
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 struct WebRequest {
     std::string method;

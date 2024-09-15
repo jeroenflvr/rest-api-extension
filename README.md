@@ -16,7 +16,7 @@ supports:
 - [x] schema endpoint
 - [x] translate datatypes
 - [ ] async query results
-- [ ] set config file location in ~/.duckdbrc
+- [x] set config file location in ~/.duckdbrc
 - [ ] ...
 
 
@@ -51,6 +51,24 @@ To run the extension code, simply start the shell with `./build/release/duckdb`.
 
 Now we can use the features from the extension directly in DuckDB. The template contains a table function `query_json_api()`.  This function
 takes a mandatory argument 'api' and few optional arguments (under construction): order_by (string), limit (int), options (vector<pair<string, string>>).
+
+config
+Set in ~/.duckdbrc, or before use
+```sql
+SET rest_api_config_file = '/users/thisguy/rest_api_extension.json';
+```
+
+Check config details from duckdb
+```sql
+D SELECT current_setting('rest_api_config_file');
+┌─────────────────────────────────────────┐
+│ current_setting('rest_api_config_file') │
+│                 varchar                 │
+├─────────────────────────────────────────┤
+│ /users/thisguy/rest_api_extension.json  │
+└─────────────────────────────────────────┘
+D 
+```
 
 command
 ```sql
