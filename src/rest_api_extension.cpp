@@ -378,7 +378,6 @@ namespace duckdb {
         auto &api = bind_data.api;
 
         if (!options.empty()) {
-            std::cout << "JEEJ!! Options: " << std::endl;
             for (auto &option : options) {
                 std::cout << "  " << option.first << " = " << option.second << std::endl;
             }
@@ -430,20 +429,20 @@ namespace duckdb {
 
         for (const auto& obj : jsonData) {
             // Iterate over each property in the JSON object
-            std::cout << "obj: " << obj.dump(4) << std::endl;
-            std::cout << "row_idx: " << row_idx << std::endl;
+            // std::cout << "obj: " << obj.dump(4) << std::endl;
+            // std::cout << "row_idx: " << row_idx << std::endl;
 
             size_t col_idx = 0;
 
             for (const auto& c : columns) {
-                std::cout << "Column Name: " << c.name << std::endl;
-                std::cout << "col_idx: " << col_idx << std::endl;
+                // std::cout << "Column Name: " << c.name << std::endl;
+                // std::cout << "col_idx: " << col_idx << std::endl;
 
                 if (c.json_type == "number") {
-                    std::cout << "JSON TYpe Number " << std::endl;
+                    // std::cout << "JSON TYpe Number " << std::endl;
                     output.SetValue(col_idx, row_idx, obj[c.name].get<double>()  );
                 } else if (c.json_type == "string") {
-                    std::cout << "JSON Type String " << std::endl;
+                    // std::cout << "JSON Type String " << std::endl;
                     output.SetValue(col_idx, row_idx, obj[c.name].get<std::string>()  );
                 } else {
                     std::cerr << "Unknown JSON Type: " << c.json_type << std::endl;
@@ -453,7 +452,7 @@ namespace duckdb {
                 ++col_idx;
             }
             ++row_idx;
-            std::cout << "------" << std::endl;
+
         }
 
         // // Get the static test data
