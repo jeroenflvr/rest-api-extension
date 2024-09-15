@@ -13,7 +13,7 @@ set(TARGET_NAME rest_api_extension)
 # Note that it should also be removed from vcpkg.json to prevent needlessly installing it..
 find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
-find_package(nlohmann_json 3.11.3 REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 set(EXTENSION_NAME ${TARGET_NAME}_extension)
 set(LOADABLE_EXTENSION_NAME ${TARGET_NAME}_loadable_extension)

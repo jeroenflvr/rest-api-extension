@@ -1,10 +1,22 @@
-# Rest_api_extension
+# rest_api_extension
 
 This repository is based on https://github.com/duckdb/extension-template, check it out if you want to build and ship your own DuckDB extension.
 
 ---
 
-This extension, Rest_api_extension, allow you to ... <extension_goal>.
+This extension, rest_api_extension, allows you to fetch data from a JSON API.
+
+
+supports:
+- [ ] static schema in api config json
+- [ ] schema for the schema in api config json
+- [ ] infer schema from the data
+- [ ] add custom headers to the request (ie. Bearer token)
+- [ ] authentication (oauth/oidc)
+- [x] schema endpoint
+- [x] translate datatypes
+- [ ] ...
+
 
 
 ## Building
@@ -35,14 +47,14 @@ The main binaries that will be built are:
 ## Running the extension
 To run the extension code, simply start the shell with `./build/release/duckdb`.
 
-Now we can use the features from the extension directly in DuckDB. The template contains a single scalar function `rest_api_extension()` that takes a string arguments and returns a string:
+Now we can use the features from the extension directly in DuckDB. The template contains a single scalar function `query_json_api()` that takes a string arguments and returns a string:
 ```
-D select rest_api_extension('Jane') as result;
+D select query_json_api();
 ┌───────────────┐
 │    result     │
 │    varchar    │
 ├───────────────┤
-│ Rest_api_extension Jane 🐥 │
+│    Jane  🐥    
 └───────────────┘
 ```
 
