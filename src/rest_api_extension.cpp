@@ -432,7 +432,7 @@ static void simple_table_function(ClientContext &context, TableFunctionInput &da
         // Iterate over each property in the JSON object
         std::cout << "obj: " << obj.dump(4) << std::endl;
         std::cout << "row_idx: " << row_idx << std::endl;
-        
+
         size_t col_idx = 0;
 
         for (const auto& c : columns) {
@@ -506,7 +506,7 @@ static void LoadInternal(DatabaseInstance &instance) {
                                                 LogicalType::VARCHAR, RestApiExtensionOpenSSLVersionScalarFun);
     ExtensionUtil::RegisterFunction(instance, rest_api_extension_openssl_version_scalar_function);
 
-    auto simple_table_func = TableFunction("simple_table", {}, simple_table_function, simple_bind, simple_init);
+    auto simple_table_func = TableFunction("query_json_api", {}, simple_table_function, simple_bind, simple_init);
     // simple_table_func.filter_pushdown = false;
     // simple_table_func.projection_pushdown = false;    
     // simple_table_func.cardinality = simple_cardinality;
