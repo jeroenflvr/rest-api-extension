@@ -20,12 +20,12 @@ struct Endpoints {
     Endpoint schema;
 };
 
+
 struct Config {
     std::string host;
     std::string root_uri;
     int port;
     Endpoints endpoints;
-
 };
 
 struct ConfigItem {

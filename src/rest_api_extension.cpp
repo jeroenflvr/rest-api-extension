@@ -383,13 +383,6 @@ namespace duckdb {
 
         auto columns = bind_data.columns;
 
-        // vector<std::string> column_names;
-        // for (const auto& o : columns){
-            
-        //     column_names.push_back(o.name);
-        //     std::cout << "Column Name: " << o.name << std::endl;    
-        // }
-
         size_t row_idx = 0;
 
         output.SetCardinality(jsonData.size());
@@ -410,6 +403,18 @@ namespace duckdb {
                 } else if (c.json_type == "string") {
                     // std::cout << "JSON Type String " << std::endl;
                     output.SetValue(col_idx, row_idx, obj[c.name].get<std::string>()  );
+                } else if (c.json_type == "array") {
+                    //std::cout << "JSON Type Array " << std::endl;
+                    auto array = obj[c.name].get<std::vector<std::string>>();
+
+                    std::vector<Value> value_list;
+                    for (const auto &item : array) {
+                        value_list.push_back(Value(item));
+                    }
+
+                    Value list_value = Value::LIST(std::move(value_list));
+                    output.SetValue(col_idx, row_idx, list_value);
+
                 } else {
                     std::cerr << "Unknown JSON Type: " << c.json_type << std::endl;
                     // output.SetValue(col_idx, row_idx, c);
@@ -418,9 +423,7 @@ namespace duckdb {
                 ++col_idx;
             }
             ++row_idx;
-
         }
-
         data_p.offset++;
     }
 
