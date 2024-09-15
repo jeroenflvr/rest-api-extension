@@ -160,7 +160,6 @@ namespace duckdb {
         std::vector<ColumnType> columns;
         int rowcount;
         // idx_t estimated_cardinality; // Optional, used for cardinality estimation in statistics
-
     };
 
 
@@ -218,7 +217,7 @@ namespace duckdb {
     // Bind function to define schema
     static unique_ptr<FunctionData> simple_bind(ClientContext &context, TableFunctionBindInput &input, vector<LogicalType> &return_types, vector<string> &names) {
         auto bind_data = make_uniq<BindArguments>();
-        //bind_data->item_name = input.inputs[0].ToString(); // First argument is 'item_name'
+        //bind_data->item_name = input.inputs[0].ToString(); // first positional argument for api or named_parameter instead?
         bind_data->filters = vector<unique_ptr<Expression>>();
 
         for (auto &kv : input.named_parameters) {
