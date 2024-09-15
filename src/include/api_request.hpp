@@ -40,18 +40,44 @@ struct ConfigItem {
 // Define the ConfigList as a vector of ConfigItem
 using ConfigList = std::vector<ConfigItem>;
 
-// Serialization for Endpoint
-// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Endpoint, uri)
-
-// // Serialization for Endpoints
-// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Endpoints, data, schema)
-
-// // Serialization for Config
-// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, host, port, root_uri, endpoints)
-
-// // Serialization for ConfigItem
-// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ConfigItem, name, config)
 
 ConfigList load_config();
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
+struct WebRequest {
+    std::string method;
+    std::string host;
+    std::int32_t port;
+    std::string path;
+    std::string scheme;
+    Headers headers;
+ 
+    WebRequest(const std::string& h, const std::string& m = "GET", const std::string& s = "https", const std::string& path = "/",
+            const std::int32_t port = 8080)
+        : method(m), host(h), scheme(s), path(path), port(port) {}
+ 
+    void addHeader(const std::string& key, const std::string& value) {
+        headers.emplace_back(std::make_pair(key, value));
+    }
+ 
+    void printRequest() const {
+        std:: cout << "Method: " << method << "\n"
+                << "Host: " << host << "\n"
+                << "Port: " << port << "\n"
+                << "Path: " << path << "\n"
+                << "Scheme: " << scheme << "\n"
+                << "Headers: ";
+            if (headers.empty()) {
+                std::cout << "  No headers\n";
+            } else {
+                for (const auto& header: headers) {
+                    std::cout << "  " << header.first << ": " << header.second << "\n";
+                }
+            }
+    }
 
+    std::string queryAPI();
+
+
+
+};
 #endif

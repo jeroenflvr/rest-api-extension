@@ -10,39 +10,11 @@
 #include <api_request.hpp>
 
 
-// For convenience
 using json = nlohmann::json;
  
 using Header = std::pair<std::string, std::string>;
 using Headers = std::vector<Header>;
 
-
-// // Define the Endpoint struct
-// struct Endpoint {
-//     std::string uri;
-// };
-
-// // Define the Endpoints struct containing multiple Endpoint objects
-// struct Endpoints {
-//     Endpoint data;
-//     Endpoint schema;
-//     // Add other endpoints as needed, e.g., info, details
-// };
-
-// // Define the Config struct containing host, port, and endpoints
-// struct Config {
-//     std::string host;
-//     std::string root_uri;
-//     int port;
-//     Endpoints endpoints;
-
-// };
-
-// // Define the ConfigItem struct containing name and config
-// struct ConfigItem {
-//     std::string name;
-//     Config config;
-// };
 
 // Define the ConfigList as a vector of ConfigItem
 using ConfigList = std::vector<ConfigItem>;
@@ -111,40 +83,42 @@ ConfigList load_config() {
     return configList;
 }
 
+
  
-struct WebRequest {
-    std::string method;
-    std::string host;
-    std::int32_t port;
-    std::string path;
-    std::string scheme;
-    Headers headers;
+std::string WebRequest::queryAPI() {
+    CURL* curl;
+    CURLcode res;
+    std::string readBuffer;
  
-    WebRequest(const std::string& h, const std::string& m = "GET", const std::string& s = "https", const std::string& path = "/",
-            const std::int32_t port = 8080)
-        : method(m), host(h), scheme(s), path(path), port(port) {}
+    // std::string auth_header = "Authorization: Bearer ";
+    // auth_header += token;
  
-    void addHeader(const std::string& key, const std::string& value) {
-        headers.emplace_back(std::make_pair(key, value));
+    curl = curl_easy_init();
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, host.c_str());
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "accept: application/json");
+        // headers = curl_slist_append(headers, auth_header.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+ 
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        res = curl_easy_perform(curl);
+ 
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        }
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
     }
  
-    void printRequest() const {
-        std:: cout << "Method: " << method << "\n"
-                << "Host: " << host << "\n"
-                << "Port: " << port << "\n"
-                << "Path: " << path << "\n"
-                << "Scheme: " << scheme << "\n"
-                << "Headers: ";
-            if (headers.empty()) {
-                std::cout << "  No headers\n";
-            } else {
-                for (const auto& header: headers) {
-                    std::cout << "  " << header.first << ": " << header.second << "\n";
-                }
-            }
-    }
-};
- 
+    return readBuffer;
+}
+
+
+
 std::string get_env_string(const std::string& key) {
     const char* env_value = std::getenv(key.c_str());
     if (!env_value) {

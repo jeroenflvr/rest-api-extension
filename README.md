@@ -12,9 +12,10 @@ supports:
 - [ ] schema for the schema in api config json
 - [ ] infer schema from the data
 - [ ] add custom headers to the request (ie. Bearer token)
-- [ ] authentication (oauth/oidc)
+- [ ] authenticate (oauth/oidc)
 - [x] schema endpoint
 - [x] translate datatypes
+- [ ] async query results
 - [ ] ...
 
 
