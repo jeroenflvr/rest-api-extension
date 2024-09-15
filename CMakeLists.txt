@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 # set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set extension name here
-set(TARGET_NAME rest_api_extension)
+set(TARGET_NAME rest_api)
 
 # DuckDB's extension distribution supports vcpkg. As such, dependencies can be added in ./vcpkg.json and then
 # used in cmake with find_package. Feel free to remove or replace with other dependencies.
@@ -22,7 +22,7 @@ project(${TARGET_NAME})
 include_directories(src/include)
 
 set(EXTENSION_SOURCES 
-      src/rest_api_extension_extension.cpp
+      src/rest_api_extension.cpp
       src/api_request
 )
 
