@@ -98,10 +98,10 @@ namespace duckdb {
             });
 
         if (it != configList.end()) {
-            return  &(*it); // Return a pointer to the config if found
+            return  &(*it); // this is not a pointer, it's a reference
             // return &it->config; // Return a pointer to the config if found
         } else {
-            return nullptr; // Return nullptr if not found
+            return nullptr; 
         }
     }
 
@@ -126,7 +126,6 @@ namespace duckdb {
         return config_file.ToString();
         
     }
-
 
     std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str) {
         std::vector<std::pair<std::string, std::string>> options;
