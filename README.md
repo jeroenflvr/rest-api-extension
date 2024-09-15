@@ -1,4 +1,4 @@
-# rest_api_extension
+# rest_api_extension - WIP (10%)
 __*DISCLAIMER extremely premature, prototype maybe, MVP*__
 
 This repository is based on https://github.com/duckdb/extension-template, check it out if you want to build and ship your own DuckDB extension.
@@ -13,14 +13,14 @@ supports:
 - [ ] schema for the schema in api config json
 - [ ] infer schema from the data
 - [ ] add custom headers to the request (ie. Bearer token)
-- [ ] authenticate (oauth/oidc)
+- [ ] authenticate (oauth/oidc) with secrets cache or separate extension? (leaning towards separate extension)
 - [x] schema endpoint
 - [x] translate datatypes
 - [ ] async query results
 - [x] set config file location in ~/.duckdbrc
 - [ ] fix unit tests
+- [ ] async support (different endpoints for submitting query, checking status and collecting results)
 - [ ] ...
-
 
 
 ## Building
