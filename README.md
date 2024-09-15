@@ -17,6 +17,7 @@ supports:
 - [x] translate datatypes
 - [ ] async query results
 - [x] set config file location in ~/.duckdbrc
+- [ ] fix unit tests
 - [ ] ...
 
 
