@@ -16,16 +16,11 @@
 #include "duckdb/planner/filter/constant_filter.hpp"
 #include "duckdb/planner/operator/logical_get.hpp"
 #include "duckdb/planner/expression/bound_constant_expression.hpp"
-// #include "duckdb/planner/expression/bound_limit_expression.hpp"
 #include "duckdb/planner/expression.hpp"
 #include "duckdb/planner/expression/bound_reference_expression.hpp"
-// #include "duckdb/planner/expression/bound_order_expression.hpp"
-// #include "duckdb/optimizer/statistics/node_statistics.hpp"
+
 #include "nlohmann/json.hpp" 
 #include <algorithm> // For std::find_if
-
-
-
 
 
 // OpenSSL linked through vcpkg
@@ -65,34 +60,28 @@ namespace duckdb {
         } else if (type == "boolean") {
             return LogicalType::BOOLEAN;
         } else if (type == "array") {
-            // For simplicity, assume array of VARCHAR. Adjust to your specific use case.
             return LogicalType::LIST(LogicalType::VARCHAR);
         }
 
-        // Default case if none of the above match
         return LogicalType::UNKNOWN;
     }
 
 
-    // Function to parse the JSON and return the struct
     ApiSchema parseJson(const std::string& jsonString) {
         ApiSchema apiSchema;
         try {
-            // Parse the JSON string into a json object
             json jsonObj = json::parse(jsonString);
             
-            // Extract the basic fields
             apiSchema.objects = jsonObj.at("objects").get<int>();
             apiSchema.name = jsonObj.at("name").get<std::string>();
             apiSchema.access = jsonObj.at("access").get<std::string>();
 
-            // Extract the parameters array
             for (const auto& param : jsonObj.at("parameters")) {
                 ColumnType p;
                 p.name = param.at("name").get<std::string>();
                 p.type = JsonToDuckDBType(param.at("type").get<std::string>());
                 p.json_type = param.at("type").get<std::string>(); 
-                apiSchema.parameters.columns.push_back(p);  // Correctly push to the vector
+                apiSchema.parameters.columns.push_back(p);  
             }
         } catch (const json::exception& e) {
             std::cerr << "JSON parsing error: " << e.what() << "\n";
@@ -102,13 +91,12 @@ namespace duckdb {
     }
 
     ConfigItem* findConfigByName(ConfigList& configList, const std::string& name) {
-        // Use std::find_if to find the ConfigItem with the specified name
+
         auto it = std::find_if(configList.begin(), configList.end(),
             [&name](const ConfigItem& item) {
                 return item.name == name;
             });
 
-        // Check if we found the item
         if (it != configList.end()) {
             return  &(*it); // Return a pointer to the config if found
             // return &it->config; // Return a pointer to the config if found
@@ -117,14 +105,14 @@ namespace duckdb {
         }
     }
 
-    // Mock static data to return
-    std::vector<std::vector<Value>> GetStaticTestData() {
-        return {
-            {Value::INTEGER(1), Value("Alice"), Value::INTEGER(30)},
-            {Value::INTEGER(2), Value("Bob"), Value::INTEGER(25)},
-            {Value::INTEGER(3), Value("Charlie"), Value::INTEGER(35)}
-        };
-    }
+    // // Mock static data to return
+    // std::vector<std::vector<Value>> GetStaticTestData() {
+    //     return {
+    //         {Value::INTEGER(1), Value("Alice"), Value::INTEGER(30)},
+    //         {Value::INTEGER(2), Value("Bob"), Value::INTEGER(25)},
+    //         {Value::INTEGER(3), Value("Charlie"), Value::INTEGER(35)}
+    //     };
+    // }
 
     struct SimpleData : public GlobalTableFunctionState {
         SimpleData() : offset(0) {
@@ -136,8 +124,7 @@ namespace duckdb {
 
 
     std::string GetRestApiConfigFile(ClientContext &context) {
-        // Access the global configuration
-        //auto &config = DBConfig::GetConfig(context);
+
         std::string name = "rest_api_config_file";
         auto &config = DBConfig::GetConfig(context);
         config.CheckLock(name);
@@ -146,38 +133,19 @@ namespace duckdb {
         // std::cout << "Option value from config: " << option->get_setting(context) << std::endl;
 
         if (!option) {
-            // check if this is an extra extension variable
             auto entry = config.extension_parameters.find(name);
             if (entry!= config.extension_parameters.end()) {
                 //std::cout << "entry found!!!!!!!!!! " <<  entry->second.default_value.ToString() << std::endl;
                 return entry->second.default_value.ToString();
             }
-            // if (entry == config.extension_parameters.end()) {
-            //     //Catalog::AutoloadExtensionByConfigName(context.client, name);
-            //     entry = config.extension_parameters.find(name);
-
-            //     //D_ASSERT(entry != config.extension_parameters.end());
-            // }
         }
-
-        
-        // Return an empty string if the configuration is not set or not found
         return "";
     }
-    // void CheckConfigOption(ClientContext &context) {
-    //     // Access DBConfig
-    //     auto config_file = ClientConfig::GetConfig(context).rest_api_config_file;
-
-    //     std::cout << "Option value from config: " << config_file << std::endl;
-
-    // }
 
 
-    // Function to parse JSON string into a vector of key-value pairs
     std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str) {
         std::vector<std::pair<std::string, std::string>> options;
 
-        // Parse the JSON string
         json parsed_json;
         try {
             parsed_json = json::parse(json_str);
@@ -185,12 +153,10 @@ namespace duckdb {
             throw std::invalid_argument(std::string("Failed to parse JSON options: ") + e.what());
         }
 
-        // Ensure the JSON is an object
         if (!parsed_json.is_object()) {
             throw std::invalid_argument("JSON options must be an object with key-value pairs.");
         }
 
-        // Iterate through the JSON object and populate the options vector
         for (auto it = parsed_json.begin(); it != parsed_json.end(); ++it) {
             if (!it.value().is_string()) {
                 throw std::invalid_argument("All values in JSON options must be strings.");
@@ -213,15 +179,6 @@ namespace duckdb {
     };
 
 
-    // static unique_ptr<NodeStatistics> simple_cardinality(ClientContext &context, const FunctionData *bind_data_p) {
-    //     auto &bind_data = (BindArguments &)*bind_data_p;
-    //     idx_t base_cardinality = 3; // Since our test data has 3 rows
-    //     // idx_t estimated_cardinality = std::min(base_cardinality, bind_data.limit);
-
-    //     return make_uniq<NodeStatistics>(estimated_cardinality, estimated_cardinality);
-    // }
-
-
     static void PushdownComplexFilter(ClientContext &context, LogicalGet &get, FunctionData *bind_data_p,
                                     vector<unique_ptr<Expression>> &filters) {
         auto &bind_data = (BindArguments &)*bind_data_p;
@@ -232,7 +189,6 @@ namespace duckdb {
             std::cout << "No complex filter provided" << std::endl;
         }
 
-        // Move filters into bind_data for later use
         for (auto &filter : filters) {
             std::cout << "Adding filter: " << filter->ToString() << std::endl;
             bind_data.filters.push_back(std::move(filter));
@@ -246,7 +202,6 @@ namespace duckdb {
 
     unique_ptr<GlobalTableFunctionState> simple_init(ClientContext &context, TableFunctionInitInput &input) {
         std::cout << "Initializing Simple Table Function" << std::endl;
-        // loop through the columns
         for (auto &col : input.column_ids) {
             std::cout << "Column: " << col << std::endl;
         }
@@ -277,8 +232,6 @@ namespace duckdb {
     
     // Bind function to define schema
     static unique_ptr<FunctionData> simple_bind(ClientContext &context, TableFunctionBindInput &input, vector<LogicalType> &return_types, vector<string> &names) {
-        // Define the columns of the table
-        // Create a bind data structure and store the item_name
         auto bind_data = make_uniq<BindArguments>();
         //bind_data->item_name = input.inputs[0].ToString(); // First argument is 'item_name'
         bind_data->filters = vector<unique_ptr<Expression>>();
@@ -384,16 +337,6 @@ namespace duckdb {
             return_types.push_back(column.type);
         }
 
-        // names.push_back("pid");
-        // return_types.push_back(LogicalType::INTEGER);
-    
-        // names.push_back("pname");
-        // return_types.push_back(LogicalType::VARCHAR);
-    
-        // names.push_back("age");
-        // return_types.push_back(LogicalType::INTEGER);
-    
-        // return nullptr;  // No additional data needed
         return std::move(bind_data); 
     }
     
@@ -456,7 +399,6 @@ namespace duckdb {
         auto columns = bind_data.columns;
 
         // vector<std::string> column_names;
-        // // Iterate over each object in the JSON array
         // for (const auto& o : columns){
             
         //     column_names.push_back(o.name);
@@ -468,7 +410,6 @@ namespace duckdb {
         output.SetCardinality(jsonData.size());
 
         for (const auto& obj : jsonData) {
-            // Iterate over each property in the JSON object
             // std::cout << "obj: " << obj.dump(4) << std::endl;
             // std::cout << "row_idx: " << row_idx << std::endl;
 
@@ -494,21 +435,6 @@ namespace duckdb {
             ++row_idx;
 
         }
-
-        // // Get the static test data
-        // auto rows = GetStaticTestData();
-        // output.SetCardinality(rows.size());
-        // // auto api_url = get_env_string("API_URL");
-
-        // // std::cout << "API_URL: " << api_url << std::endl;
-        // // Fill the output with data from the current row onward
-        // for (idx_t row_idx = 0; row_idx < rows.size(); row_idx++) {
-        //     // Fill the DataChunk
-        //     output.SetValue(0, row_idx, rows[row_idx][0]); // id
-        //     output.SetValue(1, row_idx, rows[row_idx][1]); // name
-        //     output.SetValue(2, row_idx, rows[row_idx][2]); // age
-        // }
-
 
         data_p.offset++;
     }
@@ -545,6 +471,7 @@ namespace duckdb {
                                                     LogicalType::VARCHAR, RestApiOpenSSLVersionScalarFun);
         ExtensionUtil::RegisterFunction(instance, rest_api_openssl_version_scalar_function);
 
+        // the table function
         auto simple_table_func = TableFunction("query_json_api", {}, simple_table_function, simple_bind, simple_init);
         // simple_table_func.filter_pushdown = false;
         // simple_table_func.projection_pushdown = false;    
@@ -561,10 +488,8 @@ namespace duckdb {
         
         auto &config = DBConfig::GetConfig(instance);
 
-        // Global HTTP config
-        // Single timeout value is used for all 4 types of timeouts, we could split it into 4 if users need that
         config.AddExtensionOption("rest_api_config_file", "REST API Config File Location", LogicalType::VARCHAR,
-                                Value("/Users/jeroen/projects/rest-api-extension/rest_api_extension.json"));
+                                Value("~/rest_api_extension.json"));
 
     }
 
