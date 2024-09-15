@@ -520,6 +520,12 @@ namespace duckdb {
         ExtensionUtil::RegisterFunction(instance, simple_table_func);
 
     }
+    static void RegisterConfig(DBConfig &config) {
+
+        // Register a string configuration option
+        config.AddOption("rest_api_config_file", "Configuration file for REST API",
+                         LogicalType::VARCHAR, Value("~/.rest_api_config.json"));
+    }
 
     void RestApiExtension::Load(DuckDB &db) {
         LoadInternal(*db.instance);

@@ -16,6 +16,7 @@ supports:
 - [x] schema endpoint
 - [x] translate datatypes
 - [ ] async query results
+- [ ] set config file location in ~/.duckdbrc
 - [ ] ...
 
 

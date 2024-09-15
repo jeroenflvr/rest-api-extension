@@ -10,19 +10,16 @@ using Header = std::pair<std::string, std::string>;
 using Headers = std::vector<Header>;
 
 
-// Define the Endpoint struct
 struct Endpoint {
     std::string uri;
 };
 
-// Define the Endpoints struct containing multiple Endpoint objects
+// TODO: static endpoints definitions, might not be a good idea??
 struct Endpoints {
     Endpoint data;
     Endpoint schema;
-    // Add other endpoints as needed, e.g., info, details
 };
 
-// Define the Config struct containing host, port, and endpoints
 struct Config {
     std::string host;
     std::string root_uri;
@@ -31,13 +28,11 @@ struct Config {
 
 };
 
-// Define the ConfigItem struct containing name and config
 struct ConfigItem {
     std::string name;
     Config config;
 };
 
-// Define the ConfigList as a vector of ConfigItem
 using ConfigList = std::vector<ConfigItem>;
 
 
@@ -76,8 +71,5 @@ struct WebRequest {
     }
 
     std::string queryAPI();
-
-
-
 };
 #endif
