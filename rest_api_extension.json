@@ -20,13 +20,13 @@
             "config": {
                 "host": "freetestapi.com",
                 "port": 443,
-                "root_uri": "api/v1",
+                "root_uri": "api",
                 "endpoints": {
                     "data": {
-                        "uri": "animals" 
+                        "uri": "v1/animals" 
                         },
                     "schema": {
-                            "uri": "schema"
+                            "uri": "site/animals"
                         }
                 }
             }

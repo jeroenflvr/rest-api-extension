@@ -37,6 +37,70 @@ using json = nlohmann::json;
 namespace duckdb {
 
 
+struct ColumnType {
+    std::string name;
+    LogicalType type;
+    std::string json_type;
+};
+
+struct Schema {
+    std::vector<ColumnType> columns;
+};
+
+struct ApiSchema {
+    int objects;
+    std::string name;
+    std::string access;
+    Schema parameters;
+};
+
+
+LogicalType JsonToDuckDBType(const std::string& type) {
+    if (type == "number") {
+        return LogicalType::DOUBLE;  // Can be INTEGER if preferred
+    } else if (type == "integer") {
+        return LogicalType::INTEGER;
+    } else if (type == "string") {
+        return LogicalType::VARCHAR;
+    } else if (type == "boolean") {
+        return LogicalType::BOOLEAN;
+    } else if (type == "array") {
+        // For simplicity, assume array of VARCHAR. Adjust to your specific use case.
+        return LogicalType::LIST(LogicalType::VARCHAR);
+    }
+
+    // Default case if none of the above match
+    return LogicalType::UNKNOWN;
+}
+
+
+// Function to parse the JSON and return the struct
+ApiSchema parseJson(const std::string& jsonString) {
+    ApiSchema apiSchema;
+    try {
+        // Parse the JSON string into a json object
+        json jsonObj = json::parse(jsonString);
+        
+        // Extract the basic fields
+        apiSchema.objects = jsonObj.at("objects").get<int>();
+        apiSchema.name = jsonObj.at("name").get<std::string>();
+        apiSchema.access = jsonObj.at("access").get<std::string>();
+
+        // Extract the parameters array
+        for (const auto& param : jsonObj.at("parameters")) {
+            ColumnType p;
+            p.name = param.at("name").get<std::string>();
+            p.type = JsonToDuckDBType(param.at("type").get<std::string>());
+            p.json_type = param.at("type").get<std::string>(); 
+            apiSchema.parameters.columns.push_back(p);  // Correctly push to the vector
+        }
+    } catch (const json::exception& e) {
+        std::cerr << "JSON parsing error: " << e.what() << "\n";
+    }
+    
+    return apiSchema;
+}
+
 ConfigItem* findConfigByName(ConfigList& configList, const std::string& name) {
     // Use std::find_if to find the ConfigItem with the specified name
     auto it = std::find_if(configList.begin(), configList.end(),
@@ -103,6 +167,8 @@ struct BindArguments : public TableFunctionData {
     vector<unique_ptr<Expression>> filters;
     vector<std::pair<string, string>> options;
     string api;
+    std::vector<ColumnType> columns;
+    int rowcount;
     // idx_t estimated_cardinality; // Optional, used for cardinality estimation in statistics
 
 };
@@ -244,17 +310,46 @@ static unique_ptr<FunctionData> simple_bind(ClientContext &context, TableFunctio
     //     throw std::runtime_error("Expected at least one argument");
     // }
 
+    auto cfg = load_config();
+    auto &api = bind_data->api;
+    auto config = findConfigByName(cfg, api) ;
+
+    if (!config) {
+        std::cerr << "No configuration found for API: " << api << std::endl;
+    } else {
+        std::cout << "Using configuration: " << config->name << std::endl;
+        std::cout << "host: " << config->config.host << std::endl;
+    }
+
+    std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.schema.uri;
+
+    std::cout << "API URL: " << api_url << std::endl;
+
+    std::string response_body = query_api(api_url, "");
+
+    std::cout << "Response Body: " << response_body << std::endl;
+
+    ApiSchema apiSchema = parseJson(response_body);
+
+    bind_data->columns = apiSchema.parameters.columns;
+    bind_data->rowcount = apiSchema.objects;
 
 
+    for (auto &column : apiSchema.parameters.columns) {
+        std::cout << "Parameter: " << column.name << std::endl;
+        std::cout << "Type: " << column.type.ToString() << std::endl;
+        names.push_back(column.name);
+        return_types.push_back(column.type);
+    }
 
-    names.push_back("pid");
-    return_types.push_back(LogicalType::INTEGER);
+    // names.push_back("pid");
+    // return_types.push_back(LogicalType::INTEGER);
  
-    names.push_back("pname");
-    return_types.push_back(LogicalType::VARCHAR);
+    // names.push_back("pname");
+    // return_types.push_back(LogicalType::VARCHAR);
  
-    names.push_back("age");
-    return_types.push_back(LogicalType::INTEGER);
+    // names.push_back("age");
+    // return_types.push_back(LogicalType::INTEGER);
  
     // return nullptr;  // No additional data needed
     return std::move(bind_data); 
@@ -313,24 +408,67 @@ static void simple_table_function(ClientContext &context, TableFunctionInput &da
 
     std::string response_body = query_api(api_url, "");
 
-    std::cout << "Response Body: " << response_body << std::endl;
+    // std::cout << "Response Body: " << response_body << std::endl;
 
     //auto api_data = query_api(api_url, config->config);
 
+    json jsonData = nlohmann::json::parse(response_body);
 
-    // Get the static test data
-    auto rows = GetStaticTestData();
-    output.SetCardinality(rows.size());
-    // auto api_url = get_env_string("API_URL");
+    auto columns = bind_data.columns;
 
-    // std::cout << "API_URL: " << api_url << std::endl;
-    // Fill the output with data from the current row onward
-    for (idx_t row_idx = 0; row_idx < rows.size(); row_idx++) {
-        // Fill the DataChunk
-        output.SetValue(0, row_idx, rows[row_idx][0]); // id
-        output.SetValue(1, row_idx, rows[row_idx][1]); // name
-        output.SetValue(2, row_idx, rows[row_idx][2]); // age
+    // vector<std::string> column_names;
+    // // Iterate over each object in the JSON array
+    // for (const auto& o : columns){
+        
+    //     column_names.push_back(o.name);
+    //     std::cout << "Column Name: " << o.name << std::endl;    
+    // }
+
+    size_t row_idx = 0;
+
+    output.SetCardinality(jsonData.size());
+
+    for (const auto& obj : jsonData) {
+        // Iterate over each property in the JSON object
+        std::cout << "obj: " << obj.dump(4) << std::endl;
+        std::cout << "row_idx: " << row_idx << std::endl;
+        
+        size_t col_idx = 0;
+
+        for (const auto& c : columns) {
+            std::cout << "Column Name: " << c.name << std::endl;
+            std::cout << "col_idx: " << col_idx << std::endl;
+
+            if (c.json_type == "number") {
+                std::cout << "JSON TYpe Number " << std::endl;
+                output.SetValue(col_idx, row_idx, obj[c.name].get<double>()  );
+            } else if (c.json_type == "string") {
+                std::cout << "JSON Type String " << std::endl;
+                output.SetValue(col_idx, row_idx, obj[c.name].get<std::string>()  );
+            } else {
+                std::cerr << "Unknown JSON Type: " << c.json_type << std::endl;
+                // output.SetValue(col_idx, row_idx, c);
+            }
+            // output.SetValue(col_idx, row_idx, c);
+            ++col_idx;
+        }
+        ++row_idx;
+        std::cout << "------" << std::endl;
     }
+
+    // // Get the static test data
+    // auto rows = GetStaticTestData();
+    // output.SetCardinality(rows.size());
+    // // auto api_url = get_env_string("API_URL");
+
+    // // std::cout << "API_URL: " << api_url << std::endl;
+    // // Fill the output with data from the current row onward
+    // for (idx_t row_idx = 0; row_idx < rows.size(); row_idx++) {
+    //     // Fill the DataChunk
+    //     output.SetValue(0, row_idx, rows[row_idx][0]); // id
+    //     output.SetValue(1, row_idx, rows[row_idx][1]); // name
+    //     output.SetValue(2, row_idx, rows[row_idx][2]); // age
+    // }
 
 
     data_p.offset++;
