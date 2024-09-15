@@ -105,15 +105,6 @@ namespace duckdb {
         }
     }
 
-    // // Mock static data to return
-    // std::vector<std::vector<Value>> GetStaticTestData() {
-    //     return {
-    //         {Value::INTEGER(1), Value("Alice"), Value::INTEGER(30)},
-    //         {Value::INTEGER(2), Value("Bob"), Value::INTEGER(25)},
-    //         {Value::INTEGER(3), Value("Charlie"), Value::INTEGER(35)}
-    //     };
-    // }
-
     struct SimpleData : public GlobalTableFunctionState {
         SimpleData() : offset(0) {
         }
@@ -126,20 +117,14 @@ namespace duckdb {
     std::string GetRestApiConfigFile(ClientContext &context) {
 
         std::string name = "rest_api_config_file";
-        auto &config = DBConfig::GetConfig(context);
-        config.CheckLock(name);
-        auto option = DBConfig::GetOptionByName(name);
 
-        // std::cout << "Option value from config: " << option->get_setting(context) << std::endl;
-
-        if (!option) {
-            auto entry = config.extension_parameters.find(name);
-            if (entry!= config.extension_parameters.end()) {
-                //std::cout << "entry found!!!!!!!!!! " <<  entry->second.default_value.ToString() << std::endl;
-                return entry->second.default_value.ToString();
-            }
-        }
-        return "";
+		Value config_file;
+		if (!context.TryGetCurrentSetting(name, config_file) ) {
+			throw InvalidInputException("Need the parameters damnit");
+		}
+        std::cout << "Option value from config: " << config_file.ToString() << std::endl;
+        return config_file.ToString();
+        
     }
 
 
