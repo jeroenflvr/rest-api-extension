@@ -74,13 +74,16 @@ ConfigList load_config(std::string filename) {
 
 
  
-std::string WebRequest::queryAPI() {
+std::string WebRequest::queryAPI(const std::string *body) {
     CURL* curl;
     CURLcode res;
     std::string readBuffer;
  
+    std::cout << "executing WebRequest::queryAPI" << std::endl;
     // std::string auth_header = "Authorization: Bearer ";
     // auth_header += token;
+
+
  
     curl = curl_easy_init();
     if (curl) {
@@ -94,6 +97,14 @@ std::string WebRequest::queryAPI() {
  
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+
+        if (body != nullptr){
+
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body->c_str());
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, body->size());
+        }
+
+
         res = curl_easy_perform(curl);
  
         if (res != CURLE_OK) {
@@ -123,35 +134,35 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     return size * nmemb;
 }
  
-std::string query_api(const std::string& url, const std::string& token) {
-    CURL* curl;
-    CURLcode res;
-    std::string readBuffer;
+// std::string query_api(const std::string& url, const std::string& token) {
+//     CURL* curl;
+//     CURLcode res;
+//     std::string readBuffer;
  
-    std::string auth_header = "Authorization: Bearer ";
-    auth_header += token;
+//     std::string auth_header = "Authorization: Bearer ";
+//     auth_header += token;
  
-    curl = curl_easy_init();
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
-        struct curl_slist *headers = NULL;
-        headers = curl_slist_append(headers, "accept: application/json");
-        headers = curl_slist_append(headers, auth_header.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+//     curl = curl_easy_init();
+//     if (curl) {
+//         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+//         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+//         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
+//         struct curl_slist *headers = NULL;
+//         headers = curl_slist_append(headers, "accept: application/json");
+//         headers = curl_slist_append(headers, auth_header.c_str());
+//         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
  
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        res = curl_easy_perform(curl);
+//         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+//         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+//         res = curl_easy_perform(curl);
  
-        if (res != CURLE_OK) {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-        }
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
-    }
+//         if (res != CURLE_OK) {
+//             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+//         }
+//         curl_slist_free_all(headers);
+//         curl_easy_cleanup(curl);
+//     }
  
-    return readBuffer;
-}
+//     return readBuffer;
+// }
 

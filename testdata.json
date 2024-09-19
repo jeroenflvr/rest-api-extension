@@ -1,151 +1,184 @@
 {
-    "data": [
-        {
-            "id": 1,
-            "name": "John Doe",
-            "age": 28,
-            "email": "john.doe@example.com",
-            "address": "123 Main St",
-            "city": "Anytown",
-            "state": "NY",
-            "zip": "12345",
-            "phone": "555-1234",
-            "occupation": "Engineer"
-          },
-          {
-            "id": 2,
-            "name": "Jane Smith",
-            "age": 32,
-            "email": "jane.smith@example.com",
-            "address": "456 Oak St",
-            "city": "Othertown",
-            "state": "CA",
-            "zip": "54321",
-            "phone": "555-5678",
-            "occupation": "Designer"
-          },
-          {
-            "id": 3,
-            "name": "Sam Johnson",
-            "age": 45,
-            "email": "sam.johnson@example.com",
-            "address": "789 Pine St",
-            "city": "Middletown",
-            "state": "TX",
-            "zip": "67890",
-            "phone": "555-9101",
-            "occupation": "Teacher"
-          },
-          {
-            "id": 4,
-            "name": "Emily Davis",
-            "age": 29,
-            "email": "emily.davis@example.com",
-            "address": "101 Birch St",
-            "city": "Littletown",
-            "state": "FL",
-            "zip": "34567",
-            "phone": "555-1235",
-            "occupation": "Artist"
-          },
-          {
-            "id": 5,
-            "name": "Michael Lee",
-            "age": 36,
-            "email": "michael.lee@example.com",
-            "address": "202 Cedar St",
-            "city": "Bigcity",
-            "state": "IL",
-            "zip": "23456",
-            "phone": "555-6789",
-            "occupation": "Developer"
-          },
-          {
-            "id": 6,
-            "name": "Linda Brown",
-            "age": 41,
-            "email": "linda.brown@example.com",
-            "address": "303 Maple St",
-            "city": "Capetown",
-            "state": "VA",
-            "zip": "76543",
-            "phone": "555-2345",
-            "occupation": "Scientist"
-          },
-          {
-            "id": 7,
-            "name": "David Wilson",
-            "age": 38,
-            "email": "david.wilson@example.com",
-            "address": "404 Spruce St",
-            "city": "Rivercity",
-            "state": "WA",
-            "zip": "54321",
-            "phone": "555-8765",
-            "occupation": "Consultant"
-          },
-          {
-            "id": 8,
-            "name": "Susan Martinez",
-            "age": 34,
-            "email": "susan.martinez@example.com",
-            "address": "505 Oak St",
-            "city": "Greenfield",
-            "state": "OR",
-            "zip": "67891",
-            "phone": "555-3456",
-            "occupation": "Manager"
-          },
-          {
-            "id": 9,
-            "name": "Robert Clark",
-            "age": 30,
-            "email": "robert.clark@example.com",
-            "address": "606 Elm St",
-            "city": "Newtown",
-            "state": "GA",
-            "zip": "23457",
-            "phone": "555-9876",
-            "occupation": "Analyst"
-          },
-          {
-            "id": 10,
-            "name": "Karen Lewis",
-            "age": 42,
-            "email": "karen.lewis@example.com",
-            "address": "707 Willow St",
-            "city": "Oldtown",
-            "state": "PA",
-            "zip": "32145",
-            "phone": "555-2346",
-            "occupation": "Accountant"
-          },
-          {
-            "id": 100,
-            "name": "Nancy Robinson",
-            "age": 50,
-            "email": "nancy.robinson@example.com",
-            "address": "1010 Forest St",
-            "city": "Hilltown",
-            "state": "CO",
-            "zip": "56789",
-            "phone": "555-6543",
-            "occupation": "Retired"
-          }
-    ],
-    "schema": {
-      "columns": [
-        { "name": "id", "type": "INTEGER" },
-        { "name": "name", "type": "VARCHAR" },
-        { "name": "age", "type": "INTEGER" },
-        { "name": "email", "type": "VARCHAR" },
-        { "name": "address", "type": "VARCHAR" },
-        { "name": "city", "type": "VARCHAR" },
-        { "name": "state", "type": "VARCHAR" },
-        { "name": "zip", "type": "VARCHAR" },
-        { "name": "phone", "type": "VARCHAR" },
-        { "name": "occupation", "type": "VARCHAR" }
-      ]
+  "data": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "age": 28,
+      "email": "john.doe@example.com",
+      "address": "123 Main St",
+      "city": "Anytown",
+      "state": "NY",
+      "zip": "12345",
+      "phone": "555-1234",
+      "occupation": "Engineer"
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "age": 32,
+      "email": "jane.smith@example.com",
+      "address": "456 Oak St",
+      "city": "Othertown",
+      "state": "CA",
+      "zip": "54321",
+      "phone": "555-5678",
+      "occupation": "Designer"
+    },
+    {
+      "id": 3,
+      "name": "Sam Johnson",
+      "age": 45,
+      "email": "sam.johnson@example.com",
+      "address": "789 Pine St",
+      "city": "Middletown",
+      "state": "TX",
+      "zip": "67890",
+      "phone": "555-9101",
+      "occupation": "Teacher"
+    },
+    {
+      "id": 4,
+      "name": "Emily Davis",
+      "age": 29,
+      "email": "emily.davis@example.com",
+      "address": "101 Birch St",
+      "city": "Littletown",
+      "state": "FL",
+      "zip": "34567",
+      "phone": "555-1235",
+      "occupation": "Artist"
+    },
+    {
+      "id": 5,
+      "name": "Michael Lee",
+      "age": 36,
+      "email": "michael.lee@example.com",
+      "address": "202 Cedar St",
+      "city": "Bigcity",
+      "state": "IL",
+      "zip": "23456",
+      "phone": "555-6789",
+      "occupation": "Developer"
+    },
+    {
+      "id": 6,
+      "name": "Linda Brown",
+      "age": 41,
+      "email": "linda.brown@example.com",
+      "address": "303 Maple St",
+      "city": "Capetown",
+      "state": "VA",
+      "zip": "76543",
+      "phone": "555-2345",
+      "occupation": "Scientist"
+    },
+    {
+      "id": 7,
+      "name": "David Wilson",
+      "age": 38,
+      "email": "david.wilson@example.com",
+      "address": "404 Spruce St",
+      "city": "Rivercity",
+      "state": "WA",
+      "zip": "54321",
+      "phone": "555-8765",
+      "occupation": "Consultant"
+    },
+    {
+      "id": 8,
+      "name": "Susan Martinez",
+      "age": 34,
+      "email": "susan.martinez@example.com",
+      "address": "505 Oak St",
+      "city": "Greenfield",
+      "state": "OR",
+      "zip": "67891",
+      "phone": "555-3456",
+      "occupation": "Manager"
+    },
+    {
+      "id": 9,
+      "name": "Robert Clark",
+      "age": 30,
+      "email": "robert.clark@example.com",
+      "address": "606 Elm St",
+      "city": "Newtown",
+      "state": "GA",
+      "zip": "23457",
+      "phone": "555-9876",
+      "occupation": "Analyst"
+    },
+    {
+      "id": 10,
+      "name": "Karen Lewis",
+      "age": 42,
+      "email": "karen.lewis@example.com",
+      "address": "707 Willow St",
+      "city": "Oldtown",
+      "state": "PA",
+      "zip": "32145",
+      "phone": "555-2346",
+      "occupation": "Accountant"
+    },
+    {
+      "id": 100,
+      "name": "Nancy Robinson",
+      "age": 50,
+      "email": "nancy.robinson@example.com",
+      "address": "1010 Forest St",
+      "city": "Hilltown",
+      "state": "CO",
+      "zip": "56789",
+      "phone": "555-6543",
+      "occupation": "Retired"
+    },
+    {
+      "{\"test\": \"value\"}": "",
+      "id": 101
     }
+  ],
+  "schema": {
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER"
+      },
+      {
+        "name": "name",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "age",
+        "type": "INTEGER"
+      },
+      {
+        "name": "email",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "address",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "city",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "state",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "zip",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "phone",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "occupation",
+        "type": "VARCHAR"
+      }
+    ]
   }
-  
+}

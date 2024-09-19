@@ -4,6 +4,7 @@
         "*.vuerd": "json",
         "iostream": "cpp",
         "__bit_reference": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "cstdlib": "cpp"
     }
 }

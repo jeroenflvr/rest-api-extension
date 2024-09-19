@@ -2,7 +2,7 @@
 #define API_REQUEST_HPP
 #include <string>
 
-std::string query_api(const std::string& url, const std::string& token);
+// std::string query_api(const std::string& url, const std::string& token);
 std::string get_env_string(const std::string& key);
 
  
@@ -47,7 +47,7 @@ struct WebRequest {
     Headers headers;
  
     WebRequest(const std::string& h, const std::string& m = "GET", const std::string& s = "https", const std::string& path = "/",
-            const std::int32_t port = 8080)
+            const std::int32_t port = 443)
         : method(m), host(h), scheme(s), path(path), port(port) {}
  
     void addHeader(const std::string& key, const std::string& value) {
@@ -70,6 +70,6 @@ struct WebRequest {
             }
     }
 
-    std::string queryAPI();
+    std::string queryAPI(const std::string *body = nullptr);
 };
 #endif

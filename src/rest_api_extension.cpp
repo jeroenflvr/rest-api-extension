@@ -19,6 +19,11 @@
 #include "duckdb/planner/expression.hpp"
 #include "duckdb/planner/expression/bound_reference_expression.hpp"
 
+#define _GNU_SOURCE // Ensure this is defined before including unistd.h for mkstemps
+#include <unistd.h> // For mkstemps
+#include <cstdio>     // For std::remove
+#include <fstream>    // For std::ofstream
+
 #include "nlohmann/json.hpp" 
 #include <algorithm> // For std::find_if
 
@@ -164,12 +169,14 @@ namespace duckdb {
 
     static void PushdownComplexFilter(ClientContext &context, LogicalGet &get, FunctionData *bind_data_p,
                                     vector<unique_ptr<Expression>> &filters) {
+
+        std::cout << "\n## Pushdown complex filter! ##\n"  << std::endl;
         auto &bind_data = (BindArguments &)*bind_data_p;
 
         if (!filters.empty()) {
-            std::cout << "Pushing down complex filter! "  << std::endl;
+            std::cout << "Pushing down non-complex filter! "  << std::endl;
         } else {
-            std::cout << "No complex filter provided" << std::endl;
+            std::cout << "No non-complex filter provided" << std::endl;
         }
 
         for (auto &filter : filters) {
@@ -178,13 +185,15 @@ namespace duckdb {
         }
 
         // Clear filters to indicate they have been consumed
+        std::cout << "clearing filters" << std::endl;
         filters.clear();
+        std::cout << "Done clearing filters" << std::endl;
     }
 
 
-
     unique_ptr<GlobalTableFunctionState> simple_init(ClientContext &context, TableFunctionInitInput &input) {
-        std::cout << "Initializing Simple Table Function" << std::endl;
+
+        std::cout << "\n## Initializing Simple Table Function ##\n" << std::endl;
         for (auto &col : input.column_ids) {
             std::cout << "Column: " << col << std::endl;
         }
@@ -215,6 +224,9 @@ namespace duckdb {
     
     // Bind function to define schema
     static unique_ptr<FunctionData> simple_bind(ClientContext &context, TableFunctionBindInput &input, vector<LogicalType> &return_types, vector<string> &names) {
+    
+        std::cout << "\n## Binding Simple Table Function ##\n" << std::endl;
+
         auto bind_data = make_uniq<BindArguments>();
         //bind_data->item_name = input.inputs[0].ToString(); // first positional argument for api or named_parameter instead?
         bind_data->filters = vector<unique_ptr<Expression>>();
@@ -237,11 +249,6 @@ namespace duckdb {
                 std::cout << "API: " << bind_data->api << std::endl;
             }
         }
-
-
-
-
-        std::cout << "Binding Simple Table Function" << std::endl;
 
         // for (auto &expression : input.inputs) {
         //     if (expression.type().id() == LogicalTypeId::VARCHAR) {
@@ -303,9 +310,24 @@ namespace duckdb {
 
         std::cout << "API URL: " << api_url << std::endl;
 
-        std::string response_body = query_api(api_url, "");
+        WebRequest request = WebRequest(api_url, "GET");
+        std::string response_body = request.queryAPI();
+
+        // std::string response_body = query_api(api_url, "");
 
         std::cout << "Response Body: " << response_body << std::endl;
+
+
+        // if (result->type == QueryResultType::MATERIALIZED_RESULT) {
+        //     std::cout << "Parsed JSON data successfully." << std::endl;
+        //     auto &materialized_result = (MaterializedQueryResult &)*result;
+
+        // } else {
+        //     // Clean up the temporary file
+        //     std::cout << "Query did not return a materialized result." << std::endl;
+        //     //std::remove(tmp_file_path);
+        //     throw std::runtime_error("Query did not return a materialized result.");
+        // }             
 
         ApiSchema apiSchema = parseJson(response_body);
 
@@ -325,6 +347,8 @@ namespace duckdb {
     
 
     static void simple_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
+        std::cout << "\n## Executing Simple Table Function ##\n" << std::endl;
+
         auto config_file = GetRestApiConfigFile(context);
 
         auto cfg = load_config(config_file);
@@ -371,7 +395,35 @@ namespace duckdb {
 
         std::cout << "API URL: " << api_url << std::endl;
 
-        std::string response_body = query_api(api_url, "");
+        WebRequest request = WebRequest(api_url);
+
+        std::string response_body = request.queryAPI();
+        // std::string response_body = query_api(api_url, "");
+
+
+        // auto json_value = Value(response_body);
+
+        // Create a temporary file to store JSON data
+        char tmp_file_path[] = "./tmp/json_data_XXXXXX.json";
+        int fd = mkstemps(tmp_file_path, 5); // 5 characters for ".json" extension
+        if (fd == -1) {
+            throw std::runtime_error("Failed to create temporary file.");
+        }
+        std::ofstream tmp_file(tmp_file_path);
+        if (!tmp_file) {
+            throw std::runtime_error("Failed to open temporary file for writing.");
+        }
+        tmp_file << response_body;
+        tmp_file.close();
+        
+        // std::string query = "SELECT * FROM read_json_auto('" + std::string(tmp_file_path) + "');";
+        // std::cout << "Query: " << query << std::endl;
+
+        // auto result = context.Query(query, false);
+
+        // std::cout << "Parsed JSON data successfully??" << std::endl;
+
+
 
         // std::cout << "Response Body: " << response_body << std::endl;
 
@@ -386,21 +438,23 @@ namespace duckdb {
         output.SetCardinality(jsonData.size());
 
         for (const auto& obj : jsonData) {
-            // std::cout << "obj: " << obj.dump(4) << std::endl;
-            // std::cout << "row_idx: " << row_idx << std::endl;
 
             size_t col_idx = 0;
 
             for (const auto& c : columns) {
-                // std::cout << "Column Name: " << c.name << std::endl;
-                // std::cout << "col_idx: " << col_idx << std::endl;
+                std::cout << "Column Name: " << c.name << std::endl;
+                std::cout << "col_idx: " << col_idx << std::endl;
+                std::cout << "column type: " << c.json_type << std::endl;
 
                 if (c.json_type == "number") {
-                    // std::cout << "JSON TYpe Number " << std::endl;
+                    std::cout << "JSON TYpe Number " << std::endl;
+                    std::cout << "Column Name: " << c.name << std::endl;
                     output.SetValue(col_idx, row_idx, obj[c.name].get<double>()  );
                 } else if (c.json_type == "string") {
-                    // std::cout << "JSON Type String " << std::endl;
-                    output.SetValue(col_idx, row_idx, obj[c.name].get<std::string>()  );
+                    std::cout << "JSON TYpe STRING " << std::endl;
+                    std::cout << "Column Name: " << c.name << std::endl;
+                    // output.SetValue(col_idx, row_idx, "testing");
+                    output.SetValue(col_idx, row_idx, obj[c.name].get<string>()  );
                 } else if (c.json_type == "array") {
                     //std::cout << "JSON Type Array " << std::endl;
                     auto array = obj[c.name].get<std::vector<std::string>>();
@@ -459,10 +513,10 @@ namespace duckdb {
 
         // the table function
         auto simple_table_func = TableFunction("query_json_api", {}, simple_table_function, simple_bind, simple_init);
-        // simple_table_func.filter_pushdown = false;
-        // simple_table_func.projection_pushdown = false;    
+        simple_table_func.filter_pushdown = true;
+        simple_table_func.projection_pushdown = false;    
         // simple_table_func.cardinality = simple_cardinality;
-        // simple_table_func.pushdown_complex_filter = PushdownComplexFilter;
+        simple_table_func.pushdown_complex_filter = PushdownComplexFilter;
 
         simple_table_func.named_parameters["order_by"] = LogicalType::VARCHAR;
         simple_table_func.named_parameters["limit"] = LogicalType::VARCHAR;
@@ -475,7 +529,7 @@ namespace duckdb {
         auto &config = DBConfig::GetConfig(instance);
 
         config.AddExtensionOption("rest_api_config_file", "REST API Config File Location", LogicalType::VARCHAR,
-                                Value("~/rest_api_extension.json"));
+                                Value("/users/thisguy/rest_api_extension.json"));
 
     }
 
