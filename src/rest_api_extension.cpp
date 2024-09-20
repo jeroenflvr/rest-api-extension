@@ -18,6 +18,12 @@
 #include "duckdb/planner/expression/bound_constant_expression.hpp"
 #include "duckdb/planner/expression.hpp"
 #include "duckdb/planner/expression/bound_reference_expression.hpp"
+#include "duckdb/parser/parser.hpp"
+#include "duckdb/common/enum_util.hpp"
+
+#include "duckdb/parser/parsed_data/create_view_info.hpp"
+#include "duckdb/parser/statement/select_statement.hpp"
+#include "duckdb/parser/statement/create_statement.hpp"
 
 #define _GNU_SOURCE // Ensure this is defined before including unistd.h for mkstemps
 #include <unistd.h> // For mkstemps
@@ -57,6 +63,7 @@ namespace duckdb {
 
     LogicalType JsonToDuckDBType(const std::string& type) {
         if (type == "number") {
+            std::cout << "Converting JSON number to DuckDB DOUBLE\n";
             return LogicalType::DOUBLE;  // Can be INTEGER if preferred
         } else if (type == "integer") {
             return LogicalType::INTEGER;
@@ -230,6 +237,7 @@ namespace duckdb {
         auto bind_data = make_uniq<BindArguments>();
         //bind_data->item_name = input.inputs[0].ToString(); // first positional argument for api or named_parameter instead?
         bind_data->filters = vector<unique_ptr<Expression>>();
+        std::cout << "&&&&&&&&&&&&&&& filters: " << bind_data->filters.size() << std::endl;
 
         for (auto &kv : input.named_parameters) {
             auto loption = StringUtil::Lower(kv.first);
@@ -349,6 +357,68 @@ namespace duckdb {
     static void simple_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
         std::cout << "\n## Executing Simple Table Function ##\n" << std::endl;
 
+        auto current_query = context.GetCurrentQuery();
+
+
+        std::cout << "Query: " << current_query.c_str() << std::endl;
+        
+        Parser p;
+	    p.ParseQuery(current_query);
+
+        auto s = CreateViewInfo::ParseSelect(current_query);
+
+        std::cout << "Select statement: " << s->ToString() << std::endl;
+
+
+        // // auto mcols = s.get();
+        // auto mcols = s.Copy();
+        // auto cd = mcols->node->GetSelectList();
+        // // std::cout << "Number of columns: " << cd. << std::endl;
+
+        // for (auto &chunk : cd) {
+        //     std::cout << "column: " << chunk << std::endl;
+        //     // std::cout << "type: " << chunk.type.ToString() << std::endl;
+        // }
+        // std::cout << "Number of selected columns: " << mcols->ToString() << std::endl;
+
+
+        for (auto &statement : p.statements) {
+            // Should that be the default "ToString"?
+            // string statement_sql(statement->current_query.c_str() + statement->stmt_location, statement->stmt_length);
+            std::cout << "parsed query: " << statement->ToString() << std::endl;
+            auto stype = EnumUtil::ToString(statement->type);
+
+            std::cout << "statement: " << stype << std::endl;
+            auto &select = statement->Cast<SelectStatement>();
+
+            auto cols = select.named_param_map;
+            
+            for (auto &c : cols) {
+                std::cout << "select col: " << c.first << std::endl;
+            }
+
+            auto node = select.node.get();
+
+            std::cout << "node: " << node->ToString() << std::endl;
+
+
+
+
+
+  
+            
+
+    
+        }
+        // auto statement = 
+       
+        /**
+         * projection_pushdown: 
+         *  column_names are in bind_data.columns
+         *  selected columns (idx) are in data_p.column_ids;
+         *  only return / process (/ fetch) the data in column_ids
+         */
+
         auto config_file = GetRestApiConfigFile(context);
 
         auto cfg = load_config(config_file);
@@ -437,11 +507,16 @@ namespace duckdb {
 
         output.SetCardinality(jsonData.size());
 
+
+        
+
         for (const auto& obj : jsonData) {
 
             size_t col_idx = 0;
 
-            for (const auto& c : columns) {
+            // for (const auto& c : columns) {
+            for (const auto& c_idx : column_ids) {
+                auto c = columns[c_idx];
                 std::cout << "Column Name: " << c.name << std::endl;
                 std::cout << "col_idx: " << col_idx << std::endl;
                 std::cout << "column type: " << c.json_type << std::endl;
@@ -513,8 +588,8 @@ namespace duckdb {
 
         // the table function
         auto simple_table_func = TableFunction("query_json_api", {}, simple_table_function, simple_bind, simple_init);
-        simple_table_func.filter_pushdown = true;
-        simple_table_func.projection_pushdown = false;    
+        simple_table_func.filter_pushdown = false;
+        simple_table_func.projection_pushdown = true;    
         // simple_table_func.cardinality = simple_cardinality;
         simple_table_func.pushdown_complex_filter = PushdownComplexFilter;
 
