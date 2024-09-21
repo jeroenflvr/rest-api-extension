@@ -20,6 +20,8 @@ supports:
 - [x] set config file location in ~/.duckdbrc
 - [ ] fix unit tests
 - [ ] async support (different endpoints for submitting query, checking status and collecting results)
+- [x] handle pushdown of select columns, filters (where), count, limit, order_by (bind, init, table_function)
+- [ ] build mongo request
 - [ ] ...
 
 
