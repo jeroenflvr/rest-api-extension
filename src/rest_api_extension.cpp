@@ -20,6 +20,8 @@
 #include "duckdb/planner/expression/bound_reference_expression.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/common/enum_util.hpp"
+#include "duckdb/parser/query_node/select_node.hpp"
+
 
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
 #include "duckdb/parser/statement/select_statement.hpp"
@@ -115,6 +117,10 @@ namespace duckdb {
         } else {
             return nullptr; 
         }
+    }
+
+    bool contains(const std::vector<std::string>& vec, const std::string& target) {
+        return std::find(vec.begin(), vec.end(), target) != vec.end();
     }
 
     struct SimpleData : public GlobalTableFunctionState {
@@ -356,61 +362,6 @@ namespace duckdb {
 
     static void simple_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
         std::cout << "\n## Executing Simple Table Function ##\n" << std::endl;
-
-        auto current_query = context.GetCurrentQuery();
-
-
-        std::cout << "Query: " << current_query.c_str() << std::endl;
-        
-        Parser p;
-	    p.ParseQuery(current_query);
-
-        auto s = CreateViewInfo::ParseSelect(current_query);
-
-        std::cout << "Select statement: " << s->ToString() << std::endl;
-
-
-        // // auto mcols = s.get();
-        // auto mcols = s.Copy();
-        // auto cd = mcols->node->GetSelectList();
-        // // std::cout << "Number of columns: " << cd. << std::endl;
-
-        // for (auto &chunk : cd) {
-        //     std::cout << "column: " << chunk << std::endl;
-        //     // std::cout << "type: " << chunk.type.ToString() << std::endl;
-        // }
-        // std::cout << "Number of selected columns: " << mcols->ToString() << std::endl;
-
-
-        for (auto &statement : p.statements) {
-            // Should that be the default "ToString"?
-            // string statement_sql(statement->current_query.c_str() + statement->stmt_location, statement->stmt_length);
-            std::cout << "parsed query: " << statement->ToString() << std::endl;
-            auto stype = EnumUtil::ToString(statement->type);
-
-            std::cout << "statement: " << stype << std::endl;
-            auto &select = statement->Cast<SelectStatement>();
-
-            auto cols = select.named_param_map;
-            
-            for (auto &c : cols) {
-                std::cout << "select col: " << c.first << std::endl;
-            }
-
-            auto node = select.node.get();
-
-            std::cout << "node: " << node->ToString() << std::endl;
-
-
-
-
-
-  
-            
-
-    
-        }
-        // auto statement = 
        
         /**
          * projection_pushdown: 
@@ -449,6 +400,102 @@ namespace duckdb {
         } else {
             std::cout << "querying API: " << api << std::endl;
         }
+
+        auto current_query = context.GetCurrentQuery();
+        std::cout << "Query: " << current_query.c_str() << std::endl;
+        
+        Parser p;
+	    p.ParseQuery(current_query);
+
+        auto s = CreateViewInfo::ParseSelect(current_query);
+        std::cout << "Select statement: " << s->ToString() << std::endl;
+        auto tokens = p.Tokenize(current_query);
+        std::cout << "Number of tokens: " << tokens.size() << std::endl;
+
+        auto &select = p.statements[0]->Cast<SelectStatement>();
+        if (select.node->type != QueryNodeType::SELECT_NODE) {
+            throw ParserException("Expected a single SELECT node");
+        }
+        auto &select_node = select.node->Cast<SelectNode>();
+
+        auto select_list = std::move(select_node.select_list);
+
+
+        vector<string> select_column_names;
+
+        for (auto &column : select_list) {
+            std::cout << "column: " << column.get()->GetName() << std::endl;
+            select_column_names.push_back(column.get()->GetName());
+            // std::cout << "type: " << column.type.ToString() << std::endl;
+        }
+
+        if (contains(select_column_names, "count_star()")) {
+            std::cout << "count_star() found. Returning count of rows." << std::endl;
+            output.SetCardinality(1);
+            output.SetValue(0, 0, 1);
+            data_p.offset++;
+            return;
+        }
+
+        if (contains(select_column_names, "*")) {
+            std::cout << "SELECT '*' found. OK if number of columns is less than api limit, else throw error!" << std::endl;
+        }
+
+        // auto modifiers = select_node.modifiers;
+        if (!select_node.modifiers.empty()) {
+            
+            // && select_node.modifiers[0]->type == ResultModifierType::ORDER_MODIFIER &&
+            // select_node.modifiers.size() == 1) {
+            
+            std::cout << "Modifiers found!! " << std::endl;
+            std::cout << "Number of modifiers: " << select_node.modifiers.size() << std::endl;
+
+            for (auto &modifier : select_node.modifiers) {
+
+                if(modifier->type == ResultModifierType::ORDER_MODIFIER) {
+                    auto &order = modifier->Cast<OrderModifier>();
+                    for (auto &o : order.orders) {
+                        std::cout << "order column: " << o.expression.get()->GetName() << std::endl;
+
+                        switch (o.type) {
+                            case OrderType::ASCENDING:
+                                std::cout << "order type: ASCENDING" << std::endl;
+                                break;
+                            case OrderType::DESCENDING:
+                                std::cout << "order type: DESCENDING" << std::endl;  
+                                break;                      
+                            case OrderType::INVALID:
+                                std::cout << "order type: INVALID" << std::endl;
+                                break;
+                            default:
+                                std::cout << "order type: UNKNOWN" << std::endl;
+                                break;
+                        }
+
+                    }                    
+                }
+
+
+                if (modifier->type == ResultModifierType::LIMIT_MODIFIER ) {
+                    auto &limit = modifier->Cast<LimitModifier>();
+                    std::cout << "LIMIT found!! " << std::endl;
+                    std::cout << "Limit: " << limit.limit.get()->GetName() << std::endl;
+                }
+            }
+
+
+
+
+        }
+        // if (modifiers.size() > 0) {
+        //     
+        //     // auto &order = select_node.modifiers[0]->Cast<OrderModifier>();
+
+
+
+        // }
+        std::cout << "Number of statements: " << p.statements.size() << std::endl;
+
         
 
         auto config = findConfigByName(cfg, api) ;
@@ -507,7 +554,6 @@ namespace duckdb {
 
         output.SetCardinality(jsonData.size());
 
-
         
 
         for (const auto& obj : jsonData) {
@@ -517,17 +563,17 @@ namespace duckdb {
             // for (const auto& c : columns) {
             for (const auto& c_idx : column_ids) {
                 auto c = columns[c_idx];
-                std::cout << "Column Name: " << c.name << std::endl;
-                std::cout << "col_idx: " << col_idx << std::endl;
-                std::cout << "column type: " << c.json_type << std::endl;
+                // std::cout << "Column Name: " << c.name << std::endl;
+                // std::cout << "col_idx: " << col_idx << std::endl;
+                // std::cout << "column type: " << c.json_type << std::endl;
 
                 if (c.json_type == "number") {
-                    std::cout << "JSON TYpe Number " << std::endl;
-                    std::cout << "Column Name: " << c.name << std::endl;
+                    // std::cout << "JSON TYpe Number " << std::endl;
+                    // std::cout << "Column Name: " << c.name << std::endl;
                     output.SetValue(col_idx, row_idx, obj[c.name].get<double>()  );
                 } else if (c.json_type == "string") {
-                    std::cout << "JSON TYpe STRING " << std::endl;
-                    std::cout << "Column Name: " << c.name << std::endl;
+                    // std::cout << "JSON TYpe STRING " << std::endl;
+                    // std::cout << "Column Name: " << c.name << std::endl;
                     // output.SetValue(col_idx, row_idx, "testing");
                     output.SetValue(col_idx, row_idx, obj[c.name].get<string>()  );
                 } else if (c.json_type == "array") {
