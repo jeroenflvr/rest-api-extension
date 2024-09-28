@@ -1,5 +1,6 @@
 #define DUCKDB_EXTENSION_MAIN
-
+#include <algorithm>
+#include <cctype>
 #include "rest_api_extension.hpp"
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
@@ -21,7 +22,11 @@
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/common/enum_util.hpp"
 #include "duckdb/parser/query_node/select_node.hpp"
-
+#include "duckdb/parser/parsed_data/create_table_info.hpp"
+#include "postgres_parser.hpp"
+#include "duckdb/parser/expression/comparison_expression.hpp"  // Include the comparison expressions
+#include "duckdb/parser/expression/conjunction_expression.hpp" // Include conjunction expressions
+#include "duckdb/parser/expression/operator_expression.hpp" // Include operator expressions
 
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
 #include "duckdb/parser/statement/select_statement.hpp"
@@ -80,6 +85,103 @@ namespace duckdb {
         return LogicalType::UNKNOWN;
     }
 
+    std::string toLower(const std::string& str) {
+        std::string lower_str = str;
+        std::transform(lower_str.begin(), lower_str.end(), lower_str.begin(), ::tolower);
+        return lower_str;
+    }
+
+    // Function to remove everything up to and including "SELECT" (case-insensitive)
+    void removeBeforeSelect(std::string& query) {
+        std::string keyword = "SELECT";
+        
+        // Convert query and keyword to lowercase for case insensitive comparison
+        std::string lower_query = toLower(query);
+        std::string lower_keyword = toLower(keyword);
+
+        // Find the position of "SELECT" in the query
+        size_t pos = lower_query.find(lower_keyword);
+        if (pos != std::string::npos) {
+            // Erase everything before and including "SELECT"
+            query.erase(0, pos);
+        }
+    }
+
+    bool startsWithCaseInsensitive(const std::string& str, const std::string& prefix) {
+        if (str.size() < prefix.size()) {
+            return false;
+        }
+
+        // Create lowercase copies of the string and prefix
+        std::string str_lower = str.substr(0, prefix.size());
+        std::string prefix_lower = prefix;
+
+        std::transform(str_lower.begin(), str_lower.end(), str_lower.begin(), ::tolower);
+        std::transform(prefix_lower.begin(), prefix_lower.end(), prefix_lower.begin(), ::tolower);
+
+        return str_lower == prefix_lower;
+    }
+
+void ExtractFilters(duckdb::ParsedExpression &expr) {
+    // Handle comparison expressions like "=", "!=", "<", ">", "IN", and "NOT IN"
+    if (expr.GetExpressionClass() == duckdb::ExpressionClass::COMPARISON) {
+        auto &comparison = dynamic_cast<duckdb::ComparisonExpression&>(expr);
+        std::cout << "Left: " << comparison.left->ToString() << std::endl;
+
+        // Handle different comparison types, including IN/NOT IN
+        if (expr.type == duckdb::ExpressionType::COMPARE_NOT_IN) {
+            std::cout << "Operator: NOT IN" << std::endl;
+        } else {
+            std::cout << "Operator: " << duckdb::ExpressionTypeToOperator(expr.type) << std::endl;
+        }
+
+        // Handle right side of the comparison (e.g., the list for IN/NOT IN)
+        if (comparison.right->expression_class == duckdb::ExpressionClass::OPERATOR) {
+            auto &op_expr = dynamic_cast<duckdb::OperatorExpression&>(*comparison.right);
+            std::cout << "Right: (";
+            for (size_t i = 1; i < op_expr.children.size(); ++i) {
+                std::cout << op_expr.children[i]->ToString();
+                if (i < op_expr.children.size() - 1) {
+                    std::cout << ", ";
+                }
+            }
+            std::cout << ")" << std::endl;
+        } else {
+            std::cout << "Right: " << comparison.right->ToString() << std::endl;
+        }
+    }
+    // Handle operator expressions like "IN" and "NOT IN"
+    else if (expr.GetExpressionClass() == duckdb::ExpressionClass::OPERATOR) {
+        auto &op_expr = dynamic_cast<duckdb::OperatorExpression&>(expr);
+        
+        // Special handling for "IN" and "NOT IN" which have multiple right-side values
+        std::cout << "Left: " << op_expr.children[0]->ToString() << std::endl;
+        std::cout << "Operator: " << duckdb::ExpressionTypeToOperator(expr.type) << std::endl;
+
+        std::cout << "Right: (";
+        for (size_t i = 1; i < op_expr.children.size(); ++i) {
+            std::cout << op_expr.children[i]->ToString();
+            if (i < op_expr.children.size() - 1) {
+                std::cout << ", ";
+            }
+        }
+        std::cout << ")" << std::endl;
+    }
+    // Handle conjunctions (AND/OR)
+    else if (expr.GetExpressionClass() == duckdb::ExpressionClass::CONJUNCTION) {
+        std::cout << "which level is this? " << std::endl;
+        auto &conjunction = dynamic_cast<duckdb::ConjunctionExpression&>(expr);
+        std::cout << "Conjunction: " << (expr.type == duckdb::ExpressionType::CONJUNCTION_AND ? "AND" : "OR") << std::endl;
+        for (auto &child : conjunction.children) {
+            ExtractFilters(*child);
+        }
+    }
+    // Handle other expressions if needed (e.g., function calls, constants)
+    else {
+        std::cout << "Unhandled expression type: " << expr.ToString() << std::endl;
+    }
+}
+
 
     ApiSchema parseJson(const std::string& jsonString) {
         ApiSchema apiSchema;
@@ -118,6 +220,9 @@ namespace duckdb {
             return nullptr; 
         }
     }
+
+
+
 
     bool contains(const std::vector<std::string>& vec, const std::string& target) {
         return std::find(vec.begin(), vec.end(), target) != vec.end();
@@ -194,12 +299,18 @@ namespace duckdb {
 
         for (auto &filter : filters) {
             std::cout << "Adding filter: " << filter->ToString() << std::endl;
-            bind_data.filters.push_back(std::move(filter));
+            bind_data.filters.push_back(filter->Copy());
+            // bind_data.filters.push_back(std::move(filter));
         }
+        std::cout << "## Done pushingdown complex filter! ##\n" << std::endl;
 
         // Clear filters to indicate they have been consumed
         std::cout << "clearing filters" << std::endl;
-        filters.clear();
+        std::cout << " filters filtered \n" << std::endl;
+        for (auto &filter : filters) {
+            std::cout << "Filter: " << filter->ToString() << std::endl;
+        }
+        // filters.clear();
         std::cout << "Done clearing filters" << std::endl;
     }
 
@@ -360,6 +471,7 @@ namespace duckdb {
     }
     
 
+
     static void simple_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
         std::cout << "\n## Executing Simple Table Function ##\n" << std::endl;
        
@@ -375,6 +487,7 @@ namespace duckdb {
         auto cfg = load_config(config_file);
 
         auto &data_p = data.global_state->Cast<SimpleData>();
+
 
         idx_t data_queries = 1;
         if (data_p.offset >= data_queries) {
@@ -403,23 +516,104 @@ namespace duckdb {
 
         auto current_query = context.GetCurrentQuery();
         std::cout << "Query: " << current_query.c_str() << std::endl;
+
+        if (startsWithCaseInsensitive(current_query, "CREATE OR REPLACE TABLE")){
+            std::cout << "removing CREATE OR REPLACE TABLE statement from query" << std::endl;
+            removeBeforeSelect(current_query);
+        }
         
+        std::cout << "Updated query: " << current_query.c_str() << std::endl;
+
         Parser p;
 	    p.ParseQuery(current_query);
 
         auto s = CreateViewInfo::ParseSelect(current_query);
+
+
+
         std::cout << "Select statement: " << s->ToString() << std::endl;
-        auto tokens = p.Tokenize(current_query);
-        std::cout << "Number of tokens: " << tokens.size() << std::endl;
+        auto select_statement = static_cast<duckdb::SelectStatement*>(s.get());
+        auto where = select_statement->node.get();
+        // std::cout << "Where clause: " << where->cte_map << std::endl; 
+
+
+        if (select_statement->type == duckdb::StatementType::SELECT_STATEMENT){
+            std::cout << "SELECT statement" << std::endl;
+            auto &select = select_statement->node->Cast<SelectNode>();
+
+            std::cout << "Where: " << where->ToString() << std::endl;
+            // The WHERE clause is typically part of the SELECT node, not a direct member of SelectStatement.
+            // Cast the query node to SelectNode to access the WHERE clause
+            if (select_statement->node->type == duckdb::QueryNodeType::SELECT_NODE) {
+                auto &select_node = dynamic_cast<duckdb::SelectNode&>(*select_statement->node);
+                std::cout << "Extracting WHERE clause filters from SELECT node:" << std::endl;
+                // Extract filters from the WHERE clause if present
+                if (select_node.where_clause) {
+                    std::cout << "Extracting WHERE clause filters:" << std::endl;
+                    ExtractFilters(*select_node.where_clause);
+                }
+            }
+
+        }
+
+        // auto tokens = p.Tokenize(current_query);
+        // std::cout << "Number of tokens: " << tokens.size() << std::endl;
+
+
+        auto s_count = p.statements.size();
+
+        std::cout << "Number of statements: " << s_count << std::endl;
+        
+        // PostgresParser parser;
+        // parser.Parse(current_query);
+        // if (parser.success) {
+        //     if (!parser.parse_tree) {
+        //         // empty statement
+        //         std::cout << "Empty statement" << std::endl;
+        //     }
+            
+        //     std::cout << "Parsing succeeded" << std::endl;
+        //     // for (const auto &stmt : parser.statements) {
+
+        //     // }
+        //     // if it succeeded, we transform the Postgres parse tree into a list of
+        //     // SQLStatements
+
+        //     // transformer.TransformParseTree(parser.parse_tree, statements);
+        //     // parsing_succeed = true;
+        // }
+
+        // auto &select = p.statements[0]->Cast<SelectStatement>();
+        // auto &sselect = p.statements[0];
+        // // std::cout << "SELECT statement from query query query: " << sselect << std::endl;
+        // if (sselect.get()->type!= StatementType::CREATE_STATEMENT) {
+        //     auto stmt = &sselect->Cast<CreateStatement>();
+        //     std::cout << "Table name: " << stmt->info << std::endl;
+        // }
+
+        // if (select.node->type != QueryNodeType::SELECT_NODE) {
+        //     throw ParserException("Expected a single SELECT node");
+        // }
+
+        // if (sselect.get()->type!= StatementType::SELECT_STATEMENT) {
+        //     throw ParserException("Expected a single SELECT node, create a view instead of a table. ");
+
+        // }
 
         auto &select = p.statements[0]->Cast<SelectStatement>();
-        if (select.node->type != QueryNodeType::SELECT_NODE) {
-            throw ParserException("Expected a single SELECT node");
-        }
+        
         auto &select_node = select.node->Cast<SelectNode>();
 
         auto select_list = std::move(select_node.select_list);
 
+        // auto select_statement = (duckdb::SelectStatement*)select.get();
+
+        // // Check if there is a WHERE clause
+        // if (select_statement->where_clause) {
+        //     std::cout << "WHERE clause: " << select_statement->where_clause->ToString() << std::endl;
+        // } else {
+        //     std::cout << "No WHERE clause found." << std::endl;
+        // }
 
         vector<string> select_column_names;
 
@@ -468,7 +662,7 @@ namespace duckdb {
                                 std::cout << "order type: INVALID" << std::endl;
                                 break;
                             default:
-                                std::cout << "order type: UNKNOWN" << std::endl;
+                                std::cout << "order type: UNKNOWN, so using ASCENDING" << std::endl;
                                 break;
                         }
 
@@ -480,6 +674,17 @@ namespace duckdb {
                     auto &limit = modifier->Cast<LimitModifier>();
                     std::cout << "LIMIT found!! " << std::endl;
                     std::cout << "Limit: " << limit.limit.get()->GetName() << std::endl;
+                }
+
+                if (modifier->type == ResultModifierType::DISTINCT_MODIFIER ) {
+                    auto &distinct = modifier->Cast<DistinctModifier>();
+
+                    std::cout << "DISTINCT found!! " << std::endl;
+                    auto &targets = distinct.distinct_on_targets;
+                    std::cout << "Number of distinct targets: " << targets.size() << std::endl;
+                    for (auto &target : targets) {
+                        std::cout << "distinct target: " << target.get()->GetName() << std::endl;
+                    }
                 }
             }
 
