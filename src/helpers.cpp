@@ -1,7 +1,12 @@
 #include <string>
+#include <vector> 
 #include "helpers.hpp"
 
 namespace helpers {
+
+    bool contains(const std::vector<std::string>& vec, const std::string& target) {
+        return std::find(vec.begin(), vec.end(), target) != vec.end();
+    }
 
     std::string toLower(const std::string& str) {
         std::string lower_str = str;
