@@ -543,13 +543,17 @@ namespace duckdb {
 
         if (!config) {
             std::cerr << "No configuration found for API: " << api << std::endl;
+            logger.LOG_ERROR("No configuration found for API: " + api);
             return;
         } else {
             std::cout << "Using configuration: " << config->name << std::endl;
+            logger.LOG_INFO("Using configuration: " + config->name);
             std::cout << "host: " << config->config.host << std::endl;
+            logger.LOG_INFO("host: " + config->config.host);
         }
 
         std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.data.uri;
+        logger.LOG_INFO("API URL: " + api_url);
 
         std::cout << "API URL: " << api_url << std::endl;
 
@@ -615,6 +619,7 @@ namespace duckdb {
 
                 } else {
                     std::cerr << "Unknown JSON Type: " << c.json_type << std::endl;
+                    logger.LOG_ERROR("Unknown JSON Type: " + c.json_type);
                     // output.SetValue(col_idx, row_idx, c);
                 }
                 // output.SetValue(col_idx, row_idx, c);
@@ -648,6 +653,7 @@ namespace duckdb {
     }
 
     static void LoadInternal(DatabaseInstance &instance) {
+        logger.LOG_INFO("Loading RestApi extension");
         // Register a scalar function
         auto rest_api_scalar_function = ScalarFunction("rest_api", {LogicalType::VARCHAR}, LogicalType::VARCHAR, RestApiScalarFun);
         ExtensionUtil::RegisterFunction(instance, rest_api_scalar_function);
@@ -680,6 +686,7 @@ namespace duckdb {
     }
 
     void RestApiExtension::Load(DuckDB &db) {
+        logger.LOG_INFO("i88888 Loading RestApi extension");
         LoadInternal(*db.instance);
     }
     std::string RestApiExtension::Name() {

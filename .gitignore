@@ -9,3 +9,4 @@ test/python/__pycache__/
 animals
 rest_api_extension.json
 tmp/
+rest_api_extension.log
