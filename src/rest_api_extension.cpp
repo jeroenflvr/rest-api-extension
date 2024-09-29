@@ -27,6 +27,7 @@
 #include "duckdb/parser/expression/comparison_expression.hpp"  // Include the comparison expressions
 #include "duckdb/parser/expression/conjunction_expression.hpp" // Include conjunction expressions
 #include "duckdb/parser/expression/operator_expression.hpp" // Include operator expressions
+#include "duckdb/parser/expression/function_expression.hpp"
 
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
 #include "duckdb/parser/statement/select_statement.hpp"
@@ -124,11 +125,16 @@ namespace duckdb {
 
 void ExtractFilters(duckdb::ParsedExpression &expr) {
     // Handle comparison expressions like "=", "!=", "<", ">", "IN", and "NOT IN"
+
+    std::cout << "RRRRRRRRRRR expression type: " << duckdb::ExpressionTypeToString(expr.type) << std::endl;
+
     if (expr.GetExpressionClass() == duckdb::ExpressionClass::COMPARISON) {
         auto &comparison = dynamic_cast<duckdb::ComparisonExpression&>(expr);
         std::cout << "Left: " << comparison.left->ToString() << std::endl;
 
         // Handle different comparison types, including IN/NOT IN
+        std::cout << "---------- expression type: " << duckdb::ExpressionTypeToString(expr.type) << std::endl;
+
         if (expr.type == duckdb::ExpressionType::COMPARE_NOT_IN) {
             std::cout << "Operator: NOT IN" << std::endl;
         } else {
@@ -176,10 +182,29 @@ void ExtractFilters(duckdb::ParsedExpression &expr) {
             ExtractFilters(*child);
         }
     }
+
+    // Handle function expressions like "LIKE" or "NOT LIKE" if treated as functions
+    else if (expr.GetExpressionClass() == duckdb::ExpressionClass::FUNCTION) {
+        auto &func_expr = dynamic_cast<duckdb::FunctionExpression&>(expr);
+        std::cout << "Function: " << func_expr.function_name << std::endl;
+        for (auto &arg : func_expr.children) {
+            std::cout << "Argument: " << arg->ToString() << std::endl;
+        }
+        
+        // Assuming the function arguments are the left and right sides
+        if (func_expr.children.size() == 2) {
+            std::cout << "Left: " << func_expr.children[0]->ToString() << std::endl;
+            std::cout << "Right: " << func_expr.children[1]->ToString() << std::endl;
+        }
+    }
+
+
     // Handle other expressions if needed (e.g., function calls, constants)
     else {
         std::cout << "Unhandled expression type: " << expr.ToString() << std::endl;
     }
+
+
 }
 
 
