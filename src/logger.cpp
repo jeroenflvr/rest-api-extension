@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <sstream>
 
-// Constructor: opens the log file
+// Constructor
 Logger::Logger(const std::string& filename) {
     logFile.open(filename, std::ios::out | std::ios::app);
     if (!logFile) {
@@ -13,14 +13,13 @@ Logger::Logger(const std::string& filename) {
     }
 }
 
-// Destructor: closes the log file if open
+// Destructor
 Logger::~Logger() {
     if (logFile.is_open()) {
         logFile.close();
     }
 }
 
-// Log function implementation
 void Logger::log(LogLevel level, const std::string& message, const std::string& file, const std::string& function, int line) {
     if (logFile.is_open()) {
         logFile << getCurrentTimestamp() << " || " << getLogLevelName(level) << " || "
@@ -31,7 +30,6 @@ void Logger::log(LogLevel level, const std::string& message, const std::string& 
     }
 }
 
-// Helper function to get current timestamp
 std::string Logger::getCurrentTimestamp() {
     auto now = std::chrono::system_clock::now();
     std::time_t now_time = std::chrono::system_clock::to_time_t(now);
@@ -40,7 +38,6 @@ std::string Logger::getCurrentTimestamp() {
     return ss.str();
 }
 
-// Helper function to convert log level enum to string
 std::string Logger::getLogLevelName(LogLevel level) {
     switch (level) {
         case DEBUG: return "DEBUG";
