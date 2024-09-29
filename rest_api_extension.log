@@ -1,0 +1,58 @@
+2024-09-29 12:43:59 [INFO] /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp:rest_api_bind:229 - Binding Simple Table Function
+2024-09-29 12:45:20 | INFO | /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp:rest_api_bind:229 | Binding Simple Table Function
+2024-09-29 12:46:19 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp:rest_api_bind:229 || Binding Simple Table Function
+2024-09-29 12:47:10 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:229 || Binding Simple Table Function
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:229 || ------ START ------
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:230 || Binding Simple Table Function
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:238 || Found named parameter: api = cars
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:253 || API: cars
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:238 || Found named parameter: options = {"option1": "value1"}
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:245 || Found option: option1 = value1
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:238 || Found named parameter: order_by = pname
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:260 || Examining TableFunctionBindInput
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:264 || named_parameters
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:267 ||   api: cars
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:267 ||   options: {"option1": "value1"}
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:267 ||   order_by: pname
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:283 || Config file: /Users/jeroen/projects/rest-api-extension/rest_api_extension.json
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:295 || Using configuration: cars
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:297 || host: freetestapi.com
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:301 || API URL: https://freetestapi.com:443/api/site/cars
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:311 || Response Body: {"objects":30,"name":"Cars","access":"/cars","parameters":[{"name":"id","type":"number"},{"name":"make","type":"string"},{"name":"model","type":"string"},{"name":"year","type":"number"},{"name":"color","type":"string"},{"name":"mileage","type":"number"},{"name":"price","type":"number"},{"name":"fuelType","type":"string"},{"name":"transmission","type":"string"},{"name":"engine","type":"string"},{"name":"horsepower","type":"number"},{"name":"features","type":"array"},{"name":"owners","type":"number"},{"name":"image","type":"string"}]}
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:320 || Schema from API
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || id: DOUBLE
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || make: VARCHAR
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || model: VARCHAR
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || year: DOUBLE
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || color: VARCHAR
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || mileage: DOUBLE
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || price: DOUBLE
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || fuelType: VARCHAR
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || transmission: VARCHAR
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || engine: VARCHAR
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || horsepower: DOUBLE
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || features: VARCHAR[]
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || owners: DOUBLE
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_bind:323 || image: VARCHAR
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:335 || Executing Simple Table Function
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:366 ||   option1 = value1
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:376 || querying API: cars
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:382 || Query: create or replace table cars as SELECT * FROM query_json_api(order_by = 'pname', options = '{"option1": "value1"}', api='cars') where make like 'Ch%vrolet' or (make = 'Audi' and model not in ('Q5', 'Mustang')) order by make asc limit 100;
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:386 || removing CREATE OR REPLACE TABLE statement from query
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:391 || Updated query: SELECT * FROM query_json_api(order_by = 'pname', options = '{"option1": "value1"}', api='cars') where make like 'Ch%vrolet' or (make = 'Audi' and model not in ('Q5', 'Mustang')) order by make asc limit 100;
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:401 || Select statement: SELECT * FROM query_json_api((order_by = 'pname'), ("options" = '{"option1": "value1"}'), (api = 'cars')) WHERE ((make ~~ 'Ch%vrolet') OR ((make = 'Audi') AND (model NOT IN ('Q5', 'Mustang')))) ORDER BY make ASC LIMIT 100
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:409 || SELECT statement
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:413 || Where: SELECT * FROM query_json_api((order_by = 'pname'), ("options" = '{"option1": "value1"}'), (api = 'cars')) WHERE ((make ~~ 'Ch%vrolet') OR ((make = 'Audi') AND (model NOT IN ('Q5', 'Mustang')))) ORDER BY make ASC LIMIT 100
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:419 || Extracting WHERE clause filters from SELECT node
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:423 || Extracting WHERE clause filters
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:437 || Number of statements: 1
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:450 || pushing column: *
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:466 || SELECT '*' found. OK if number of columns is less than api limit, else throw error!
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:476 || Modifiers found!!
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:478 || Number of modifiers: 2
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:486 || order column: make
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:491 || order type: ASCENDING
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:514 || LIMIT found!!
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:516 || Limit: 100
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:540 || Number of statements: 1
+2024-09-29 13:19:31 || INFO || /Users/jeroen/projects/rest-api-extension/src/rest_api_extension.cpp || rest_api_table_function:335 || Executing Simple Table Function

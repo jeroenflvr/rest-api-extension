@@ -27,6 +27,7 @@ set(EXTENSION_SOURCES
       src/api_request
       src/helpers.cpp
       src/extract_filters.cpp
+      src/logger.cpp
 )
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
