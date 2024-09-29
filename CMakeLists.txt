@@ -27,6 +27,7 @@ set(EXTENSION_SOURCES
       src/api_request.cpp
       src/helpers.cpp
       src/extract_filters.cpp
+      src/prepare_query.cpp
       src/logger.cpp
 )
 

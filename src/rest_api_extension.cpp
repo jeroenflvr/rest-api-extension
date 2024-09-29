@@ -41,7 +41,8 @@
 #include "extract_filters.hpp"
 #include "rest_api_config.hpp"
 #include "logger.hpp"
-
+#include "models.hpp"
+#include "prepare_query.hpp"
 
 // OpenSSL linked through vcpkg
 #include <openssl/opensslv.h>
@@ -200,17 +201,13 @@ namespace duckdb {
     unique_ptr<GlobalTableFunctionState> rest_api_init(ClientContext &context, TableFunctionInitInput &input) {
 
         std::cout << "\n## Step 3: Initializing Simple Table Function ##" << std::endl;
-        std::cout << "Getting predicate: which columns to fetch. " << std::endl;
+        std::cout << "Getting predicate: which columns to fetch. Prep AST and IR." << std::endl;
         logger.LOG_INFO("Step 3: Initializing Simple Table Function");
         for (auto &col : input.column_ids) {
             // std::cout << "Column: " << col << std::endl;
             logger.LOG_INFO("Column: " + std::to_string(col));
         }
 
-        //for (auto &projection_id : input.projection_ids) {
-        //    std::cout << "Projection ID: " << projection_id << std::endl;
-        //    logger.LOG_INFO("Projection ID: " + projection_id);
-        //}
 
         optional_ptr<TableFilterSet> filter_set = input.filters;
 
@@ -220,12 +217,15 @@ namespace duckdb {
 
                 const std::unique_ptr<TableFilter>& filter_ptr = filter_pair.second;
 
-                // std::cout << "filter: " << static_cast<int>(filter_ptr->filter_type) << std::endl;
                 logger.LOG_INFO("Found filter: " + std::to_string(static_cast<int>(filter_ptr->filter_type)));
 
             }
         }
-
+        auto current_query = context.GetCurrentQuery();
+        std::cout << "init query: " << current_query << std::endl;
+         
+        auto rest_api_ir = process_query(context, current_query);
+        
         auto result = make_uniq<SimpleData>();
         result->offset = 0;
         result->filters = input.filters;
@@ -241,6 +241,7 @@ namespace duckdb {
         logger.LOG_INFO("Reading config, defining schema, query schema endpoint if needed, binding columns and types");
         logger.LOG_INFO("------ START ------");
         logger.LOG_INFO("Binding Simple Table Function");
+
 
         auto bind_data = make_uniq<BindArguments>();
         //bind_data->item_name = input.inputs[0].ToString(); // first positional argument for api or named_parameter instead?
@@ -313,14 +314,10 @@ namespace duckdb {
         std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.schema.uri;
         logger.LOG_INFO("API URL: " + api_url);
 
-        // std::cout << "\t\tAPI URL: " << api_url << std::endl;
 
         WebRequest request = WebRequest(api_url, "GET");
         std::string response_body = request.queryAPI();
 
-        // std::string response_body = query_api(api_url, "");
-
-        // std::cout << "\t\tResponse Body: "<< response_body << std::endl;
         logger.LOG_INFO("Response Body: " + response_body);
        
 
@@ -329,10 +326,8 @@ namespace duckdb {
         bind_data->columns = apiSchema.parameters.columns;
         bind_data->rowcount = apiSchema.objects;
 
-        // std::cout << "\tSchema from API" << std::endl;
         logger.LOG_INFO("Schema from API");
         for (auto &column : apiSchema.parameters.columns) {
-            // std::cout << "\t\t" << column.name << ": " << column.type.ToString() <<  std::endl;
             logger.LOG_INFO(column.name + ": " + column.type.ToString());
             names.push_back(column.name);
             return_types.push_back(column.type);
@@ -375,7 +370,6 @@ namespace duckdb {
 
         if (!options.empty()) {
             for (auto &option : options) {
-                // std::cout << "  " << option.first << " = " << option.second << std::endl;
                 logger.LOG_INFO("  " + option.first + " = " + option.second);
             }
         }
@@ -385,22 +379,18 @@ namespace duckdb {
             logger.LOG_ERROR("No API provided. Skipping rest call");
             return;
         } else {
-            // std::cout << "querying API: " << api << std::endl;
             logger.LOG_INFO("querying API: " + api);
 
         }
 
         auto current_query = context.GetCurrentQuery();
-        // std::cout << "Query: " << current_query.c_str() << std::endl;
         logger.LOG_INFO("Query: " + current_query);
 
         if (helpers::startsWithCaseInsensitive(current_query, "CREATE OR REPLACE TABLE")){
-            // std::cout << "removing CREATE OR REPLACE TABLE statement from query" << std::endl;
             logger.LOG_INFO("removing CREATE OR REPLACE TABLE statement from query");
             helpers::removeBeforeSelect(current_query);
         }
         
-        // std::cout << "Updated query: " << current_query.c_str() << std::endl;
         logger.LOG_INFO("Updated query: " + current_query);
 
         Parser p;
@@ -408,31 +398,22 @@ namespace duckdb {
 
         auto s = CreateViewInfo::ParseSelect(current_query);
 
-
-
-        // std::cout << "Select statement: " << s->ToString() << std::endl;
         logger.LOG_INFO("Select statement: " + s->ToString());
         auto select_statement = static_cast<duckdb::SelectStatement*>(s.get());
         auto where = select_statement->node.get();
-        // std::cout << "Where clause: " << where->cte_map << std::endl; 
 
 
         if (select_statement->type == duckdb::StatementType::SELECT_STATEMENT){
-            // std::cout << "SELECT statement" << std::endl;
             logger.LOG_INFO("SELECT statement");
             auto &select = select_statement->node->Cast<SelectNode>();
 
-            // std::cout << "Where: " << where->ToString() << std::endl;
             logger.LOG_INFO("Where: " + where->ToString());
             // The WHERE clause is typically part of the SELECT node, not a direct member of SelectStatement.
             // Cast the query node to SelectNode to access the WHERE clause
             if (select_statement->node->type == duckdb::QueryNodeType::SELECT_NODE) {
                 auto &select_node = dynamic_cast<duckdb::SelectNode&>(*select_statement->node);
-                // std::cout << "Extracting WHERE clause filters from SELECT node:" << std::endl;
                 logger.LOG_INFO("Extracting WHERE clause filters from SELECT node");
-                // Extract filters from the WHERE clause if present
                 if (select_node.where_clause) {
-                    // std::cout << "Extracting WHERE clause filters:" << std::endl;
                     logger.LOG_INFO("Extracting WHERE clause filters");
                     ExtractFilters(*select_node.where_clause);
                 }
@@ -440,16 +421,11 @@ namespace duckdb {
 
         }
 
-        // auto tokens = p.Tokenize(current_query);
-        // std::cout << "Number of tokens: " << tokens.size() << std::endl;
-
 
         auto s_count = p.statements.size();
 
-        // std::cout << "Number of statements: " << s_count << std::endl;
         logger.LOG_INFO("Number of statements: " + std::to_string(s_count));
         
-
         auto &select = p.statements[0]->Cast<SelectStatement>();
         
         auto &select_node = select.node->Cast<SelectNode>();
@@ -459,14 +435,11 @@ namespace duckdb {
         vector<string> select_column_names;
 
         for (auto &column : select_list) {
-            // std::cout << "column: " << column.get()->GetName() << std::endl;
             logger.LOG_INFO("pushing column: " + column.get()->GetName());
             select_column_names.push_back(column.get()->GetName());
-            // std::cout << "type: " << column.type.ToString() << std::endl;
         }
 
         if (helpers::contains(select_column_names, "count_star()")) {
-            // std::cout << "count_star() found. Returning count of rows." << std::endl;
             logger.LOG_INFO("count_star() found. Returning count of rows.");
             output.SetCardinality(1);
             output.SetValue(0, 0, 1);
@@ -475,19 +448,13 @@ namespace duckdb {
         }
 
         if (helpers::contains(select_column_names, "*")) {
-            // std::cout << "SELECT '*' found. OK if number of columns is less than api limit, else throw error!" << std::endl;
             logger.LOG_INFO("SELECT '*' found. OK if number of columns is less than api limit, else throw error!");
         }
 
-        // auto modifiers = select_node.modifiers;
         if (!select_node.modifiers.empty()) {
             
-            // && select_node.modifiers[0]->type == ResultModifierType::ORDER_MODIFIER &&
-            // select_node.modifiers.size() == 1) {
             
-            // std::cout << "Modifiers found!! " << std::endl;
             logger.LOG_INFO("Modifiers found!!");
-            // std::cout << "Number of modifiers: " << select_node.modifiers.size() << std::endl;
             logger.LOG_INFO("Number of modifiers: " + std::to_string(select_node.modifiers.size()));
 
             for (auto &modifier : select_node.modifiers) {
@@ -495,24 +462,19 @@ namespace duckdb {
                 if(modifier->type == ResultModifierType::ORDER_MODIFIER) {
                     auto &order = modifier->Cast<OrderModifier>();
                     for (auto &o : order.orders) {
-                        // std::cout << "order column: " << o.expression.get()->GetName() << std::endl;
                         logger.LOG_INFO("order column: " + o.expression.get()->GetName());
 
                         switch (o.type) {
                             case OrderType::ASCENDING:
-                                // std::cout << "order type: ASCENDING" << std::endl;
                                 logger.LOG_INFO("order type: ASCENDING");
                                 break;
                             case OrderType::DESCENDING:
-                                // std::cout << "order type: DESCENDING" << std::endl;  
                                 logger.LOG_INFO("order type: DESCENDING");
                                 break;                      
                             case OrderType::INVALID:
-                                // std::cout << "order type: INVALID" << std::endl;
                                 logger.LOG_ERROR("order type: INVALID");
                                 break;
                             default:
-                                // std::cout << "order type: UNKNOWN, so using ASCENDING" << std::endl;
                                 logger.LOG_INFO("order type: UNKNOWN, so using ASCENDING");
                                 break;
                         }
@@ -520,36 +482,26 @@ namespace duckdb {
                     }                    
                 }
 
-
                 if (modifier->type == ResultModifierType::LIMIT_MODIFIER ) {
                     auto &limit = modifier->Cast<LimitModifier>();
-                    // std::cout << "LIMIT found!! " << std::endl;
                     logger.LOG_INFO("LIMIT found!!");
-                    // std::cout << "Limit: " << limit.limit.get()->GetName() << std::endl;
                     logger.LOG_INFO("Limit: " + limit.limit.get()->GetName());
                 }
 
                 if (modifier->type == ResultModifierType::DISTINCT_MODIFIER ) {
                     auto &distinct = modifier->Cast<DistinctModifier>();
 
-                    // std::cout << "DISTINCT found!! " << std::endl;
                     logger.LOG_INFO("DISTINCT found!!");
                     auto &targets = distinct.distinct_on_targets;
-                    // std::cout << "Number of distinct targets: " << targets.size() << std::endl;
                     logger.LOG_INFO("Number of distinct targets: " + std::to_string(targets.size()));
                     for (auto &target : targets) {
-                        // std::cout << "distinct target: " << target.get()->GetName() << std::endl;
                         logger.LOG_INFO("distinct target: " + target.get()->GetName());
                     }
                 }
             }
 
-
-
-
         }
 
-        // std::cout << "Number of statements: " << p.statements.size() << std::endl;
         logger.LOG_INFO("Number of statements: " + std::to_string(p.statements.size()));
 
         auto config = findConfigByName(cfg, api) ;
@@ -559,33 +511,29 @@ namespace duckdb {
             logger.LOG_ERROR("No configuration found for API: " + api);
             return;
         } else {
-            // std::cout << "Using configuration: " << config->name << std::endl;
             logger.LOG_INFO("Using configuration: " + config->name);
-            // std::cout << "host: " << config->config.host << std::endl;
             logger.LOG_INFO("host: " + config->config.host);
         }
 
         std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.data.uri;
         logger.LOG_INFO("API URL: " + api_url);
 
-        // std::cout << "API URL: " << api_url << std::endl;
-
         WebRequest request = WebRequest(api_url);
 
         std::string response_body = request.queryAPI();
 
         // Create a temporary file to store JSON data
-        char tmp_file_path[] = "./tmp/json_data_XXXXXX.json";
-        int fd = mkstemps(tmp_file_path, 5); // 5 characters for ".json" extension
-        if (fd == -1) {
-            throw std::runtime_error("Failed to create temporary file.");
-        }
-        std::ofstream tmp_file(tmp_file_path);
-        if (!tmp_file) {
-            throw std::runtime_error("Failed to open temporary file for writing.");
-        }
-        tmp_file << response_body;
-        tmp_file.close();
+        // char tmp_file_path[] = "./tmp/json_data_XXXXXX.json";
+        // int fd = mkstemps(tmp_file_path, 5); // 5 characters for ".json" extension
+        // if (fd == -1) {
+        //     throw std::runtime_error("Failed to create temporary file.");
+        // }
+        // std::ofstream tmp_file(tmp_file_path);
+        // if (!tmp_file) {
+        //     throw std::runtime_error("Failed to open temporary file for writing.");
+        // }
+        // tmp_file << response_body;
+        // tmp_file.close();
 
 
         json jsonData = nlohmann::json::parse(response_body);
@@ -602,7 +550,6 @@ namespace duckdb {
 
             size_t col_idx = 0;
 
-            // for (const auto& c : columns) {
             for (const auto& c_idx : column_ids) {
                 auto c = columns[c_idx];
                 // std::cout << "Column Name: " << c.name << std::endl;
