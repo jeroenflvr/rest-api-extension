@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 
+
 class Logger {
 public:
    enum LogLevel {
@@ -29,5 +30,7 @@ private:
     std::string getCurrentTimestamp();
     std::string getLogLevelName(LogLevel level);
 };
+
+extern Logger logger;
 
 #endif // LOGGER_H

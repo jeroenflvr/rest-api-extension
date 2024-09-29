@@ -50,7 +50,6 @@
 using json = nlohmann::json;
 
 namespace duckdb {
-    Logger logger("rest_api_extension.log");
 
     struct ColumnType {
         std::string name;
@@ -165,42 +164,49 @@ namespace duckdb {
                                     vector<unique_ptr<Expression>> &filters) {
 
         std::cout << "\n## Step 2: Pushdown complex filter! ##\n"  << std::endl;
+        logger.LOG_INFO("Step 2: PushdownComplexFilter");
         auto &bind_data = (BindArguments &)*bind_data_p;
 
         if (!filters.empty()) {
-            std::cout << "Pushing down non-complex filter! "  << std::endl;
+            std::cout << "Pushing down filter! "  << std::endl;
+            logger.LOG_INFO("Pushing down  filter");
         } else {
             std::cout << "No non-complex filter provided" << std::endl;
+            logger.LOG_INFO("No non-complex filter provided");
+
         }
 
         for (auto &filter : filters) {
             std::cout << "Adding filter: " << filter->ToString() << std::endl;
+            logger.LOG_INFO("Adding filter: " + filter->ToString());
             bind_data.filters.push_back(filter->Copy());
             // bind_data.filters.push_back(std::move(filter));
         }
-        std::cout << "## Done pushingdown complex filter! ##\n" << std::endl;
+        //std::cout << "## Done pushingdown complex filter! ##\n" << std::endl;
 
         // Clear filters to indicate they have been consumed
-        std::cout << "clearing filters" << std::endl;
-        std::cout << " filters filtered \n" << std::endl;
+        // std::cout << "clearing filters" << std::endl;
+        //std::cout << " filters filtered \n" << std::endl;
         for (auto &filter : filters) {
             std::cout << "Filter: " << filter->ToString() << std::endl;
         }
         // filters.clear();
-        std::cout << "Done clearing filters" << std::endl;
+        //std::cout << "Done clearing filters" << std::endl;
     }
 
 
     unique_ptr<GlobalTableFunctionState> rest_api_init(ClientContext &context, TableFunctionInitInput &input) {
 
         std::cout << "\n## Initializing Simple Table Function ##\n" << std::endl;
+        logger.LOG_INFO("Step 3: Initializing Simple Table Function");
         for (auto &col : input.column_ids) {
             std::cout << "Column: " << col << std::endl;
         }
 
-        for (auto &projection_id : input.projection_ids) {
-            std::cout << "Projection ID: " << projection_id << std::endl;
-        }
+        //for (auto &projection_id : input.projection_ids) {
+        //    std::cout << "Projection ID: " << projection_id << std::endl;
+        //    logger.LOG_INFO("Projection ID: " + projection_id);
+        //}
 
         optional_ptr<TableFilterSet> filter_set = input.filters;
 

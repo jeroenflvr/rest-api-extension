@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <sstream>
 
+
 // Constructor
 Logger::Logger(const std::string& filename) {
     logFile.open(filename, std::ios::out | std::ios::app);
@@ -20,11 +21,15 @@ Logger::~Logger() {
     }
 }
 
+std::mutex log_mutex;
+
 void Logger::log(LogLevel level, const std::string& message, const std::string& file, const std::string& function, int line) {
+    std::lock_guard<std::mutex> guard(log_mutex);
     if (logFile.is_open()) {
         logFile << getCurrentTimestamp() << " || " << getLogLevelName(level) << " || "
                 << file << " || " << function << ":" << line << " || "
                 << message << std::endl;
+        logFile.flush();
     } else {
         std::cerr << "Log file not open!" << std::endl;
     }
@@ -47,3 +52,5 @@ std::string Logger::getLogLevelName(LogLevel level) {
         default:    return "UNKNOWN";
     }
 }
+
+Logger logger("rest_api_extension.log");

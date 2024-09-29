@@ -6,14 +6,15 @@
 #include "duckdb/parser/expression/operator_expression.hpp" // Include operator expressions
 #include "duckdb/parser/expression/function_expression.hpp"
 #include "postgres_parser.hpp"
-
+#include "logger.hpp"
 
 namespace duckdb {
-
     void ExtractFilters(duckdb::ParsedExpression &expr) {
         // Handle comparison expressions like "=", "!=", "<", ">", "IN", and "NOT IN"
+        logger.LOG_INFO("Extracting filters from expression: " + expr.ToString());
 
         std::cout << "RRRRRRRRRRR expression type: " << duckdb::ExpressionTypeToString(expr.type) << std::endl;
+        logger.LOG_INFO("Extracting filters from expression: " + duckdb::ExpressionTypeToString(expr.type));
 
         if (expr.GetExpressionClass() == duckdb::ExpressionClass::COMPARISON) {
             auto &comparison = dynamic_cast<duckdb::ComparisonExpression&>(expr);
