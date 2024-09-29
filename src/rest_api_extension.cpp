@@ -340,7 +340,7 @@ namespace duckdb {
 
     static void rest_api_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
         std::cout << "\n## Step 4: Executing Simple Table Function ##\n" << std::endl;
-        logger.LOG_INFO("Executing Simple Table Function");
+        logger.LOG_INFO("Executing Table Function");
        
         /**
          * projection_pushdown: 
@@ -416,7 +416,9 @@ namespace duckdb {
                 if (select_node.where_clause) {
                     logger.LOG_INFO("Extracting WHERE clause filters");
                     ExtractFilters(*select_node.where_clause);
+
                 }
+                
             }
 
         }
