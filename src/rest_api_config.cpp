@@ -48,7 +48,6 @@ namespace rest_api_config {
     }
     
     ConfigList load_config(std::string filename) {
-        // TODO: move to config
         std::ifstream file(filename);
         if (!file.is_open()) {
             std::cerr << "Unable to open config.json file.\n";
