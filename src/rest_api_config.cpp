@@ -3,12 +3,25 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <fstream>
 #include <nlohmann/json.hpp>
+#include "rest_api_config.hpp"
 
 using json = nlohmann::json;
 
+using ConfigList = std::vector<rest_api_config::ConfigItem>;
+
+
 
 namespace rest_api_config {
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Endpoint, uri)
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Endpoints, data, schema)
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, host, port, root_uri, endpoints)
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ConfigItem, name, config)
+
 
     std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str) {
         std::vector<std::pair<std::string, std::string>> options;
@@ -33,4 +46,52 @@ namespace rest_api_config {
 
         return options;
     }
+    
+    ConfigList load_config(std::string filename) {
+        // TODO: move to config
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Unable to open config.json file.\n";
+            return {};
+        }
+
+        json j;
+        try {
+            file >> j;
+        } catch (json::parse_error& e) {
+            std::cerr << "Parse error: " << e.what() << '\n';
+            return {};
+        }
+
+        file.close();
+
+        ConfigList configList;
+        try {
+            configList = j.get<ConfigList>();
+        } catch (json::type_error& e) {
+            std::cerr << "Type error during deserialization: " << e.what() << '\n';
+            return {};
+        } catch (json::exception& e) {
+            std::cerr << "Error during deserialization: " << e.what() << '\n';
+            return {};
+        }
+
+        for (const auto& item : configList) {
+            std::cout << "Name: " << item.name << '\n';
+            std::cout << "Host: " << item.config.host << '\n';
+            std::cout << "Port: " << item.config.port << '\n';
+            std::cout << "Root URI: " << item.config.root_uri << '\n';
+
+            std::cout << "Endpoints:\n";
+            std::cout << "  Data URI: " << item.config.endpoints.data.uri << '\n';
+            std::cout << "  Schema URI: " << item.config.endpoints.schema.uri << '\n';
+            std::cout << "--------------------------\n";
+        }
+
+        return configList;
+    }
+
+
+
+    
 }

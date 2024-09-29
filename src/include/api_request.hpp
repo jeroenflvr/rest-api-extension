@@ -10,33 +10,33 @@ using Header = std::pair<std::string, std::string>;
 using Headers = std::vector<Header>;
 
 
-struct Endpoint {
-    std::string uri;
-};
+// struct Endpoint {
+//     std::string uri;
+// };
 
-// TODO: static endpoints definitions, might not be a good idea??
-struct Endpoints {
-    Endpoint data;
-    Endpoint schema;
-};
-
-
-struct Config {
-    std::string host;
-    std::string root_uri;
-    int port;
-    Endpoints endpoints;
-};
-
-struct ConfigItem {
-    std::string name;
-    Config config;
-};
-
-using ConfigList = std::vector<ConfigItem>;
+// // TODO: static endpoints definitions, might not be a good idea??
+// struct Endpoints {
+//     Endpoint data;
+//     Endpoint schema;
+// };
 
 
-ConfigList load_config(std::string filename);
+// struct Config {
+//     std::string host;
+//     std::string root_uri;
+//     int port;
+//     Endpoints endpoints;
+// };
+
+// struct ConfigItem {
+//     std::string name;
+//     Config config;
+// };
+
+// using ConfigList = std::vector<ConfigItem>;
+
+
+// ConfigList load_config(std::string filename);
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 struct WebRequest {
     std::string method;

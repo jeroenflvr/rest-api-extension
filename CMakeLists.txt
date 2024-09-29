@@ -24,7 +24,7 @@ include_directories(src/include)
 set(EXTENSION_SOURCES 
       src/rest_api_extension.cpp
       src/rest_api_config.cpp
-      src/api_request
+      src/api_request.cpp
       src/helpers.cpp
       src/extract_filters.cpp
       src/logger.cpp

@@ -111,10 +111,10 @@ namespace duckdb {
         return apiSchema;
     }
 
-    ConfigItem* findConfigByName(ConfigList& configList, const std::string& name) {
+    rest_api_config::ConfigItem* findConfigByName(rest_api_config::ConfigList& configList, const std::string& name) {
 
         auto it = std::find_if(configList.begin(), configList.end(),
-            [&name](const ConfigItem& item) {
+            [&name](const rest_api_config::ConfigItem& item) {
                 return item.name == name;
             });
 
@@ -283,7 +283,7 @@ namespace duckdb {
         logger.LOG_INFO("Config file: " + config_file);
         std::cout << "\tConfig file: " << config_file << std::endl;
 
-        auto cfg = load_config(config_file);
+        auto cfg = rest_api_config::load_config(config_file);
         auto &api = bind_data->api;
         auto config = findConfigByName(cfg, api) ;
 
@@ -343,7 +343,7 @@ namespace duckdb {
 
         auto config_file = GetRestApiConfigFile(context);
 
-        auto cfg = load_config(config_file);
+        auto cfg = rest_api_config::load_config(config_file);
 
         auto &data_p = data.global_state->Cast<SimpleData>();
 
