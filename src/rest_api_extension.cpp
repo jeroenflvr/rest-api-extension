@@ -24,10 +24,7 @@
 #include "duckdb/parser/query_node/select_node.hpp"
 #include "duckdb/parser/parsed_data/create_table_info.hpp"
 #include "postgres_parser.hpp"
-#include "duckdb/parser/expression/comparison_expression.hpp"  // Include the comparison expressions
-#include "duckdb/parser/expression/conjunction_expression.hpp" // Include conjunction expressions
-#include "duckdb/parser/expression/operator_expression.hpp" // Include operator expressions
-#include "duckdb/parser/expression/function_expression.hpp"
+
 
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
 #include "duckdb/parser/statement/select_statement.hpp"
@@ -40,6 +37,9 @@
 
 #include "nlohmann/json.hpp" 
 #include <algorithm> // For std::find_if
+
+#include "helpers.hpp"
+#include "extract_filters.hpp"
 
 
 // OpenSSL linked through vcpkg
@@ -86,126 +86,90 @@ namespace duckdb {
         return LogicalType::UNKNOWN;
     }
 
-    std::string toLower(const std::string& str) {
-        std::string lower_str = str;
-        std::transform(lower_str.begin(), lower_str.end(), lower_str.begin(), ::tolower);
-        return lower_str;
-    }
 
-    // Function to remove everything up to and including "SELECT" (case-insensitive)
-    void removeBeforeSelect(std::string& query) {
-        std::string keyword = "SELECT";
+// void ExtractFilters(duckdb::ParsedExpression &expr) {
+//     // Handle comparison expressions like "=", "!=", "<", ">", "IN", and "NOT IN"
+
+//     std::cout << "RRRRRRRRRRR expression type: " << duckdb::ExpressionTypeToString(expr.type) << std::endl;
+
+//     if (expr.GetExpressionClass() == duckdb::ExpressionClass::COMPARISON) {
+//         auto &comparison = dynamic_cast<duckdb::ComparisonExpression&>(expr);
+//         std::cout << "Left: " << comparison.left->ToString() << std::endl;
+
+//         // Handle different comparison types, including IN/NOT IN
+//         std::cout << "---------- expression type: " << duckdb::ExpressionTypeToString(expr.type) << std::endl;
+
+//         if (expr.type == duckdb::ExpressionType::COMPARE_NOT_IN) {
+//             std::cout << "Operator: NOT IN" << std::endl;
+//         } else {
+//             std::cout << "Operator: " << duckdb::ExpressionTypeToOperator(expr.type) << std::endl;
+//         }
+
+//         // Handle right side of the comparison (e.g., the list for IN/NOT IN)
+//         if (comparison.right->expression_class == duckdb::ExpressionClass::OPERATOR) {
+//             auto &op_expr = dynamic_cast<duckdb::OperatorExpression&>(*comparison.right);
+//             std::cout << "Right: (";
+//             for (size_t i = 1; i < op_expr.children.size(); ++i) {
+//                 std::cout << op_expr.children[i]->ToString();
+//                 if (i < op_expr.children.size() - 1) {
+//                     std::cout << ", ";
+//                 }
+//             }
+//             std::cout << ")" << std::endl;
+//         } else {
+//             std::cout << "Right: " << comparison.right->ToString() << std::endl;
+//         }
+//     }
+//     // Handle operator expressions like "IN" and "NOT IN"
+//     else if (expr.GetExpressionClass() == duckdb::ExpressionClass::OPERATOR) {
+//         auto &op_expr = dynamic_cast<duckdb::OperatorExpression&>(expr);
         
-        // Convert query and keyword to lowercase for case insensitive comparison
-        std::string lower_query = toLower(query);
-        std::string lower_keyword = toLower(keyword);
+//         // Special handling for "IN" and "NOT IN" which have multiple right-side values
+//         std::cout << "Left: " << op_expr.children[0]->ToString() << std::endl;
+//         std::cout << "Operator: " << duckdb::ExpressionTypeToOperator(expr.type) << std::endl;
 
-        // Find the position of "SELECT" in the query
-        size_t pos = lower_query.find(lower_keyword);
-        if (pos != std::string::npos) {
-            // Erase everything before and including "SELECT"
-            query.erase(0, pos);
-        }
-    }
+//         std::cout << "Right: (";
+//         for (size_t i = 1; i < op_expr.children.size(); ++i) {
+//             std::cout << op_expr.children[i]->ToString();
+//             if (i < op_expr.children.size() - 1) {
+//                 std::cout << ", ";
+//             }
+//         }
+//         std::cout << ")" << std::endl;
+//     }
+//     // Handle conjunctions (AND/OR)
+//     else if (expr.GetExpressionClass() == duckdb::ExpressionClass::CONJUNCTION) {
+//         std::cout << "which level is this? " << std::endl;
+//         auto &conjunction = dynamic_cast<duckdb::ConjunctionExpression&>(expr);
+//         std::cout << "Conjunction: " << (expr.type == duckdb::ExpressionType::CONJUNCTION_AND ? "AND" : "OR") << std::endl;
+//         for (auto &child : conjunction.children) {
+//             ExtractFilters(*child);
+//         }
+//     }
 
-    bool startsWithCaseInsensitive(const std::string& str, const std::string& prefix) {
-        if (str.size() < prefix.size()) {
-            return false;
-        }
-
-        // Create lowercase copies of the string and prefix
-        std::string str_lower = str.substr(0, prefix.size());
-        std::string prefix_lower = prefix;
-
-        std::transform(str_lower.begin(), str_lower.end(), str_lower.begin(), ::tolower);
-        std::transform(prefix_lower.begin(), prefix_lower.end(), prefix_lower.begin(), ::tolower);
-
-        return str_lower == prefix_lower;
-    }
-
-void ExtractFilters(duckdb::ParsedExpression &expr) {
-    // Handle comparison expressions like "=", "!=", "<", ">", "IN", and "NOT IN"
-
-    std::cout << "RRRRRRRRRRR expression type: " << duckdb::ExpressionTypeToString(expr.type) << std::endl;
-
-    if (expr.GetExpressionClass() == duckdb::ExpressionClass::COMPARISON) {
-        auto &comparison = dynamic_cast<duckdb::ComparisonExpression&>(expr);
-        std::cout << "Left: " << comparison.left->ToString() << std::endl;
-
-        // Handle different comparison types, including IN/NOT IN
-        std::cout << "---------- expression type: " << duckdb::ExpressionTypeToString(expr.type) << std::endl;
-
-        if (expr.type == duckdb::ExpressionType::COMPARE_NOT_IN) {
-            std::cout << "Operator: NOT IN" << std::endl;
-        } else {
-            std::cout << "Operator: " << duckdb::ExpressionTypeToOperator(expr.type) << std::endl;
-        }
-
-        // Handle right side of the comparison (e.g., the list for IN/NOT IN)
-        if (comparison.right->expression_class == duckdb::ExpressionClass::OPERATOR) {
-            auto &op_expr = dynamic_cast<duckdb::OperatorExpression&>(*comparison.right);
-            std::cout << "Right: (";
-            for (size_t i = 1; i < op_expr.children.size(); ++i) {
-                std::cout << op_expr.children[i]->ToString();
-                if (i < op_expr.children.size() - 1) {
-                    std::cout << ", ";
-                }
-            }
-            std::cout << ")" << std::endl;
-        } else {
-            std::cout << "Right: " << comparison.right->ToString() << std::endl;
-        }
-    }
-    // Handle operator expressions like "IN" and "NOT IN"
-    else if (expr.GetExpressionClass() == duckdb::ExpressionClass::OPERATOR) {
-        auto &op_expr = dynamic_cast<duckdb::OperatorExpression&>(expr);
+//     // Handle function expressions like "LIKE" or "NOT LIKE" if treated as functions
+//     else if (expr.GetExpressionClass() == duckdb::ExpressionClass::FUNCTION) {
+//         auto &func_expr = dynamic_cast<duckdb::FunctionExpression&>(expr);
+//         std::cout << "Function: " << func_expr.function_name << std::endl;
+//         for (auto &arg : func_expr.children) {
+//             std::cout << "Argument: " << arg->ToString() << std::endl;
+//         }
         
-        // Special handling for "IN" and "NOT IN" which have multiple right-side values
-        std::cout << "Left: " << op_expr.children[0]->ToString() << std::endl;
-        std::cout << "Operator: " << duckdb::ExpressionTypeToOperator(expr.type) << std::endl;
-
-        std::cout << "Right: (";
-        for (size_t i = 1; i < op_expr.children.size(); ++i) {
-            std::cout << op_expr.children[i]->ToString();
-            if (i < op_expr.children.size() - 1) {
-                std::cout << ", ";
-            }
-        }
-        std::cout << ")" << std::endl;
-    }
-    // Handle conjunctions (AND/OR)
-    else if (expr.GetExpressionClass() == duckdb::ExpressionClass::CONJUNCTION) {
-        std::cout << "which level is this? " << std::endl;
-        auto &conjunction = dynamic_cast<duckdb::ConjunctionExpression&>(expr);
-        std::cout << "Conjunction: " << (expr.type == duckdb::ExpressionType::CONJUNCTION_AND ? "AND" : "OR") << std::endl;
-        for (auto &child : conjunction.children) {
-            ExtractFilters(*child);
-        }
-    }
-
-    // Handle function expressions like "LIKE" or "NOT LIKE" if treated as functions
-    else if (expr.GetExpressionClass() == duckdb::ExpressionClass::FUNCTION) {
-        auto &func_expr = dynamic_cast<duckdb::FunctionExpression&>(expr);
-        std::cout << "Function: " << func_expr.function_name << std::endl;
-        for (auto &arg : func_expr.children) {
-            std::cout << "Argument: " << arg->ToString() << std::endl;
-        }
-        
-        // Assuming the function arguments are the left and right sides
-        if (func_expr.children.size() == 2) {
-            std::cout << "Left: " << func_expr.children[0]->ToString() << std::endl;
-            std::cout << "Right: " << func_expr.children[1]->ToString() << std::endl;
-        }
-    }
+//         // Assuming the function arguments are the left and right sides
+//         if (func_expr.children.size() == 2) {
+//             std::cout << "Left: " << func_expr.children[0]->ToString() << std::endl;
+//             std::cout << "Right: " << func_expr.children[1]->ToString() << std::endl;
+//         }
+//     }
 
 
-    // Handle other expressions if needed (e.g., function calls, constants)
-    else {
-        std::cout << "Unhandled expression type: " << expr.ToString() << std::endl;
-    }
+//     // Handle other expressions if needed (e.g., function calls, constants)
+//     else {
+//         std::cout << "Unhandled expression type: " << expr.ToString() << std::endl;
+//     }
 
 
-}
+// }
 
 
     ApiSchema parseJson(const std::string& jsonString) {
@@ -542,9 +506,9 @@ void ExtractFilters(duckdb::ParsedExpression &expr) {
         auto current_query = context.GetCurrentQuery();
         std::cout << "Query: " << current_query.c_str() << std::endl;
 
-        if (startsWithCaseInsensitive(current_query, "CREATE OR REPLACE TABLE")){
+        if (helpers::startsWithCaseInsensitive(current_query, "CREATE OR REPLACE TABLE")){
             std::cout << "removing CREATE OR REPLACE TABLE statement from query" << std::endl;
-            removeBeforeSelect(current_query);
+            helpers::removeBeforeSelect(current_query);
         }
         
         std::cout << "Updated query: " << current_query.c_str() << std::endl;

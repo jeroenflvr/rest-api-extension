@@ -24,6 +24,8 @@ include_directories(src/include)
 set(EXTENSION_SOURCES 
       src/rest_api_extension.cpp
       src/api_request
+      src/helpers.cpp
+      src/extract_filters.cpp
 )
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
