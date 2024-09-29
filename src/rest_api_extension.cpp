@@ -150,29 +150,6 @@ namespace duckdb {
         
     }
 
-    // std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str) {
-    //     std::vector<std::pair<std::string, std::string>> options;
-
-    //     json parsed_json;
-    //     try {
-    //         parsed_json = json::parse(json_str);
-    //     } catch (const json::parse_error &e) {
-    //         throw std::invalid_argument(std::string("Failed to parse JSON options: ") + e.what());
-    //     }
-
-    //     if (!parsed_json.is_object()) {
-    //         throw std::invalid_argument("JSON options must be an object with key-value pairs.");
-    //     }
-
-    //     for (auto it = parsed_json.begin(); it != parsed_json.end(); ++it) {
-    //         if (!it.value().is_string()) {
-    //             throw std::invalid_argument("All values in JSON options must be strings.");
-    //         }
-    //         options.emplace_back(it.key(), it.value().get<std::string>());
-    //     }
-
-    //     return options;
-    // }
 
     struct BindArguments : public TableFunctionData {
         string item_name;
@@ -275,42 +252,20 @@ namespace duckdb {
             }
         }
 
-        // for (auto &expression : input.inputs) {
-        //     if (expression.type().id() == LogicalTypeId::VARCHAR) {
-        //         std::cout << "item_name: " << expression.ToString() << std::endl;
-        //     }
-        // }
 
-        // Capture limit from named parameters
-        // if (input.named_parameters.find("limit") != input.named_parameters.end()) {
-        //     bind_data->limit = input.named_parameters["limit"].GetValue<idx_t>();
-        // }
+        std::cout << "Examining TableFunctionBindInput:" << std::endl;
 
-        // Capture order_by from named parameters
-        // auto order_by_entry = input.named_parameters.find("order_by");
-        // if (order_by_entry != input.named_parameters.end()) {
-        //     auto order_by = StringValue::Get(order_by_entry->second);
-        //     std::cout << "have order_by: " << order_by << std::endl;
-        //     bind_data->order_by = order_by;
-        // } else {
-        //     std::cout << "No order_by provided" << std::endl;
-        // }
-
-        // auto &column_ids = input.named_parameters["projected_columns"].GetValue<vector<column_t>>();
-
-            std::cout << "Examining TableFunctionBindInput:" << std::endl;
-
-            // Print named_parameters
-            std::cout << "named_parameters:" << std::endl;
-            if (!input.named_parameters.empty()) {
-                for (const auto& param : input.named_parameters) {
-                    std::cout << "  " << param.first << ": " << param.second.ToString() << std::endl;
-                }
-            } else {
-                std::cout << "  (empty)" << std::endl;
+        // Print named_parameters
+        std::cout << "named_parameters:" << std::endl;
+        if (!input.named_parameters.empty()) {
+            for (const auto& param : input.named_parameters) {
+                std::cout << "  " << param.first << ": " << param.second.ToString() << std::endl;
             }
+        } else {
+            std::cout << "  (empty)" << std::endl;
+        }
 
-            std::cout << std::endl;
+        std::cout << std::endl;
 
         // Ensure there is at least one argument
         // if (input.inputs.size() < 1) {
@@ -341,18 +296,7 @@ namespace duckdb {
         // std::string response_body = query_api(api_url, "");
 
         std::cout << "Response Body: " << response_body << std::endl;
-
-
-        // if (result->type == QueryResultType::MATERIALIZED_RESULT) {
-        //     std::cout << "Parsed JSON data successfully." << std::endl;
-        //     auto &materialized_result = (MaterializedQueryResult &)*result;
-
-        // } else {
-        //     // Clean up the temporary file
-        //     std::cout << "Query did not return a materialized result." << std::endl;
-        //     //std::remove(tmp_file_path);
-        //     throw std::runtime_error("Query did not return a materialized result.");
-        // }             
+       
 
         ApiSchema apiSchema = parseJson(response_body);
 
@@ -464,56 +408,12 @@ namespace duckdb {
 
         std::cout << "Number of statements: " << s_count << std::endl;
         
-        // PostgresParser parser;
-        // parser.Parse(current_query);
-        // if (parser.success) {
-        //     if (!parser.parse_tree) {
-        //         // empty statement
-        //         std::cout << "Empty statement" << std::endl;
-        //     }
-            
-        //     std::cout << "Parsing succeeded" << std::endl;
-        //     // for (const auto &stmt : parser.statements) {
-
-        //     // }
-        //     // if it succeeded, we transform the Postgres parse tree into a list of
-        //     // SQLStatements
-
-        //     // transformer.TransformParseTree(parser.parse_tree, statements);
-        //     // parsing_succeed = true;
-        // }
-
-        // auto &select = p.statements[0]->Cast<SelectStatement>();
-        // auto &sselect = p.statements[0];
-        // // std::cout << "SELECT statement from query query query: " << sselect << std::endl;
-        // if (sselect.get()->type!= StatementType::CREATE_STATEMENT) {
-        //     auto stmt = &sselect->Cast<CreateStatement>();
-        //     std::cout << "Table name: " << stmt->info << std::endl;
-        // }
-
-        // if (select.node->type != QueryNodeType::SELECT_NODE) {
-        //     throw ParserException("Expected a single SELECT node");
-        // }
-
-        // if (sselect.get()->type!= StatementType::SELECT_STATEMENT) {
-        //     throw ParserException("Expected a single SELECT node, create a view instead of a table. ");
-
-        // }
 
         auto &select = p.statements[0]->Cast<SelectStatement>();
         
         auto &select_node = select.node->Cast<SelectNode>();
 
         auto select_list = std::move(select_node.select_list);
-
-        // auto select_statement = (duckdb::SelectStatement*)select.get();
-
-        // // Check if there is a WHERE clause
-        // if (select_statement->where_clause) {
-        //     std::cout << "WHERE clause: " << select_statement->where_clause->ToString() << std::endl;
-        // } else {
-        //     std::cout << "No WHERE clause found." << std::endl;
-        // }
 
         vector<string> select_column_names;
 
@@ -592,16 +492,8 @@ namespace duckdb {
 
 
         }
-        // if (modifiers.size() > 0) {
-        //     
-        //     // auto &order = select_node.modifiers[0]->Cast<OrderModifier>();
 
-
-
-        // }
         std::cout << "Number of statements: " << p.statements.size() << std::endl;
-
-        
 
         auto config = findConfigByName(cfg, api) ;
 
@@ -620,10 +512,6 @@ namespace duckdb {
         WebRequest request = WebRequest(api_url);
 
         std::string response_body = request.queryAPI();
-        // std::string response_body = query_api(api_url, "");
-
-
-        // auto json_value = Value(response_body);
 
         // Create a temporary file to store JSON data
         char tmp_file_path[] = "./tmp/json_data_XXXXXX.json";
@@ -637,19 +525,7 @@ namespace duckdb {
         }
         tmp_file << response_body;
         tmp_file.close();
-        
-        // std::string query = "SELECT * FROM read_json_auto('" + std::string(tmp_file_path) + "');";
-        // std::cout << "Query: " << query << std::endl;
 
-        // auto result = context.Query(query, false);
-
-        // std::cout << "Parsed JSON data successfully??" << std::endl;
-
-
-
-        // std::cout << "Response Body: " << response_body << std::endl;
-
-        //auto api_data = query_api(api_url, config->config);
 
         json jsonData = nlohmann::json::parse(response_body);
 
