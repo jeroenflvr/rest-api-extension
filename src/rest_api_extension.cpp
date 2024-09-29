@@ -24,8 +24,6 @@
 #include "duckdb/parser/query_node/select_node.hpp"
 #include "duckdb/parser/parsed_data/create_table_info.hpp"
 #include "postgres_parser.hpp"
-#
-
 
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
 #include "duckdb/parser/statement/select_statement.hpp"
@@ -192,7 +190,7 @@ namespace duckdb {
     }
 
 
-    unique_ptr<GlobalTableFunctionState> simple_init(ClientContext &context, TableFunctionInitInput &input) {
+    unique_ptr<GlobalTableFunctionState> rest_api_init(ClientContext &context, TableFunctionInitInput &input) {
 
         std::cout << "\n## Initializing Simple Table Function ##\n" << std::endl;
         for (auto &col : input.column_ids) {
@@ -224,7 +222,7 @@ namespace duckdb {
     }
     
     // Bind function to define schema
-    static unique_ptr<FunctionData> simple_bind(ClientContext &context, TableFunctionBindInput &input, vector<LogicalType> &return_types, vector<string> &names) {
+    static unique_ptr<FunctionData> rest_api_bind(ClientContext &context, TableFunctionBindInput &input, vector<LogicalType> &return_types, vector<string> &names) {
     
         std::cout << "\n## Binding Simple Table Function ##\n" << std::endl;
 
@@ -316,7 +314,7 @@ namespace duckdb {
     
 
 
-    static void simple_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
+    static void rest_api_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
         std::cout << "\n## Executing Simple Table Function ##\n" << std::endl;
        
         /**
@@ -614,19 +612,19 @@ namespace duckdb {
         ExtensionUtil::RegisterFunction(instance, rest_api_openssl_version_scalar_function);
 
         // the table function
-        auto simple_table_func = TableFunction("query_json_api", {}, simple_table_function, simple_bind, simple_init);
-        simple_table_func.filter_pushdown = false;
-        simple_table_func.projection_pushdown = true;    
-        // simple_table_func.cardinality = simple_cardinality;
-        simple_table_func.pushdown_complex_filter = PushdownComplexFilter;
+        auto rest_api_table_func = TableFunction("query_json_api", {}, rest_api_table_function, rest_api_bind, rest_api_init);
+        rest_api_table_func.filter_pushdown = false;
+        rest_api_table_func.projection_pushdown = true;    
+        // rest_api_table_func.cardinality = simple_cardinality;
+        rest_api_table_func.pushdown_complex_filter = PushdownComplexFilter;
 
-        simple_table_func.named_parameters["order_by"] = LogicalType::VARCHAR;
-        simple_table_func.named_parameters["limit"] = LogicalType::VARCHAR;
-        simple_table_func.named_parameters["columns"] = LogicalType::VARCHAR;
-        simple_table_func.named_parameters["options"] = LogicalType::VARCHAR;
-        simple_table_func.named_parameters["api"] = LogicalType::VARCHAR;
+        rest_api_table_func.named_parameters["order_by"] = LogicalType::VARCHAR;
+        rest_api_table_func.named_parameters["limit"] = LogicalType::VARCHAR;
+        rest_api_table_func.named_parameters["columns"] = LogicalType::VARCHAR;
+        rest_api_table_func.named_parameters["options"] = LogicalType::VARCHAR;
+        rest_api_table_func.named_parameters["api"] = LogicalType::VARCHAR;
 
-        ExtensionUtil::RegisterFunction(instance, simple_table_func);
+        ExtensionUtil::RegisterFunction(instance, rest_api_table_func);
         
         auto &config = DBConfig::GetConfig(instance);
 
