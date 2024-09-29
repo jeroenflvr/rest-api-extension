@@ -143,7 +143,7 @@ namespace duckdb {
 		if (!context.TryGetCurrentSetting(name, config_file) ) {
 			throw InvalidInputException("Need the parameters damnit");
 		}
-        std::cout << "\tOption value from config: " << config_file.ToString() << std::endl;
+        // std::cout << "\tOption value from config: " << config_file.ToString() << std::endl;
         return config_file.ToString();
         
     }
@@ -163,21 +163,22 @@ namespace duckdb {
     static void PushdownComplexFilter(ClientContext &context, LogicalGet &get, FunctionData *bind_data_p,
                                     vector<unique_ptr<Expression>> &filters) {
 
-        std::cout << "\n## Step 2: Pushdown complex filter! ##\n"  << std::endl;
+        std::cout << "\n## Step 2: Pushdown complex filter ##\n"  << std::endl;
+        std::cout << "a way to get the filters/where statements - seems insufficient for our use case" << std::endl;
         logger.LOG_INFO("Step 2: PushdownComplexFilter");
         auto &bind_data = (BindArguments &)*bind_data_p;
 
         if (!filters.empty()) {
-            std::cout << "Pushing down filter! "  << std::endl;
+            // std::cout << "Pushing down filter! "  << std::endl;
             logger.LOG_INFO("Pushing down  filter");
         } else {
-            std::cout << "No non-complex filter provided" << std::endl;
+            // std::cout << "No non-complex filter provided" << std::endl;
             logger.LOG_INFO("No non-complex filter provided");
 
         }
 
         for (auto &filter : filters) {
-            std::cout << "Adding filter: " << filter->ToString() << std::endl;
+            // std::cout << "Adding filter: " << filter->ToString() << std::endl;
             logger.LOG_INFO("Adding filter: " + filter->ToString());
             bind_data.filters.push_back(filter->Copy());
             // bind_data.filters.push_back(std::move(filter));
@@ -188,7 +189,8 @@ namespace duckdb {
         // std::cout << "clearing filters" << std::endl;
         //std::cout << " filters filtered \n" << std::endl;
         for (auto &filter : filters) {
-            std::cout << "Filter: " << filter->ToString() << std::endl;
+            // std::cout << "Filter: " << filter->ToString() << std::endl;
+            logger.LOG_INFO("Filter: " + filter->ToString());
         }
         // filters.clear();
         //std::cout << "Done clearing filters" << std::endl;
@@ -197,10 +199,12 @@ namespace duckdb {
 
     unique_ptr<GlobalTableFunctionState> rest_api_init(ClientContext &context, TableFunctionInitInput &input) {
 
-        std::cout << "\n## Initializing Simple Table Function ##\n" << std::endl;
+        std::cout << "\n## Step 3: Initializing Simple Table Function ##" << std::endl;
+        std::cout << "Getting predicate: which columns to fetch. " << std::endl;
         logger.LOG_INFO("Step 3: Initializing Simple Table Function");
         for (auto &col : input.column_ids) {
-            std::cout << "Column: " << col << std::endl;
+            // std::cout << "Column: " << col << std::endl;
+            logger.LOG_INFO("Column: " + std::to_string(col));
         }
 
         //for (auto &projection_id : input.projection_ids) {
@@ -216,7 +220,8 @@ namespace duckdb {
 
                 const std::unique_ptr<TableFilter>& filter_ptr = filter_pair.second;
 
-                std::cout << "filter: " << static_cast<int>(filter_ptr->filter_type) << std::endl;
+                // std::cout << "filter: " << static_cast<int>(filter_ptr->filter_type) << std::endl;
+                logger.LOG_INFO("Found filter: " + std::to_string(static_cast<int>(filter_ptr->filter_type)));
 
             }
         }
@@ -231,7 +236,9 @@ namespace duckdb {
     // Bind function to define schema
     static unique_ptr<FunctionData> rest_api_bind(ClientContext &context, TableFunctionBindInput &input, vector<LogicalType> &return_types, vector<string> &names) {
     
-        std::cout << "\n## Step 1/4: Binding Simple Table Function ##\n" << std::endl;
+        std::cout << "\n## Step 1: Binding Simple Table Function ##" << std::endl;
+        std::cout << "Reading config, defining schema, query schema endpoint if needed, binding columns and types" << std::endl;
+        logger.LOG_INFO("Reading config, defining schema, query schema endpoint if needed, binding columns and types");
         logger.LOG_INFO("------ START ------");
         logger.LOG_INFO("Binding Simple Table Function");
 
@@ -242,14 +249,14 @@ namespace duckdb {
         for (auto &kv : input.named_parameters) {
             auto loption = StringUtil::Lower(kv.first);
             logger.LOG_INFO("Found named parameter: " + loption + " = " + kv.second.ToString());
-            std::cout << "\tFound named parameter: " << loption << " = " << kv.second.ToString() << std::endl;
+            // std::cout << "\tFound named parameter: " << loption << " = " << kv.second.ToString() << std::endl;
             if (loption == "options") {
                 std::string json_str = kv.second.GetValue<std::string>();
                 if (!json_str.empty()) {
                     bind_data->options = rest_api_config::ParseOptionsFromJSON(json_str);
                     for (auto &option : bind_data->options) {
                         logger.LOG_INFO("Found option: " + option.first + " = " + option.second);
-                        std::cout << "\t\tOption: " << option.first << " = " << option.second << std::endl;
+                        // std::cout << "\t\tOption: " << option.first << " = " << option.second << std::endl;
                     }
                 }
             }
@@ -257,28 +264,28 @@ namespace duckdb {
             if (loption == "api") {
                 bind_data->api = kv.second.GetValue<std::string>();
                 logger.LOG_INFO("API: " + bind_data->api);
-                std::cout << "\tAPI: " << bind_data->api << std::endl;
+                // std::cout << "\tAPI: " << bind_data->api << std::endl;
             }
         }
 
 
-        std::cout << "\n\tExamining TableFunctionBindInput:" << std::endl;
+        // std::cout << "\n\tExamining TableFunctionBindInput:" << std::endl;
         logger.LOG_INFO("Examining TableFunctionBindInput");
 
         // Print named_parameters
-        std::cout << "\tnamed_parameters:" << std::endl;
+        // std::cout << "\tnamed_parameters:" << std::endl;
         logger.LOG_INFO("named_parameters");
         if (!input.named_parameters.empty()) {
             for (const auto& param : input.named_parameters) {
                 logger.LOG_INFO("  " + param.first + ": " + param.second.ToString());
-                std::cout << "\t\t  " << param.first << ": " << param.second.ToString() << std::endl;
+                // std::cout << "\t\t  " << param.first << ": " << param.second.ToString() << std::endl;
             }
         } else {
             logger.LOG_INFO("  (empty)");
-            std::cout << "  (empty)" << std::endl;
+            // std::cout << "  (empty)" << std::endl;
         }
 
-        std::cout << std::endl;
+        // std::cout << std::endl;
 
         // Ensure there is at least one argument
         // if (input.inputs.size() < 1) {
@@ -287,7 +294,7 @@ namespace duckdb {
         // 
         auto config_file = GetRestApiConfigFile(context);
         logger.LOG_INFO("Config file: " + config_file);
-        std::cout << "\tConfig file: " << config_file << std::endl;
+        // std::cout << "\tConfig file: " << config_file << std::endl;
 
         auto cfg = rest_api_config::load_config(config_file);
         auto &api = bind_data->api;
@@ -297,23 +304,23 @@ namespace duckdb {
             std::cerr << "\tNo configuration found for API: " << api << std::endl;
             logger.LOG_ERROR("No configuration found for API: " + api);
         } else {
-            std::cout << "\t\tUsing configuration: " << config->name << std::endl;
+            // std::cout << "\t\tUsing configuration: " << config->name << std::endl;
             logger.LOG_INFO("Using configuration: " + config->name);
-            std::cout << "\t\thost: " << config->config.host << std::endl;
+            // std::cout << "\t\thost: " << config->config.host << std::endl;
             logger.LOG_INFO("host: " + config->config.host);
         }
 
         std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.schema.uri;
         logger.LOG_INFO("API URL: " + api_url);
 
-        std::cout << "\t\tAPI URL: " << api_url << std::endl;
+        // std::cout << "\t\tAPI URL: " << api_url << std::endl;
 
         WebRequest request = WebRequest(api_url, "GET");
         std::string response_body = request.queryAPI();
 
         // std::string response_body = query_api(api_url, "");
 
-        std::cout << "\t\tResponse Body: "<< response_body << std::endl;
+        // std::cout << "\t\tResponse Body: "<< response_body << std::endl;
         logger.LOG_INFO("Response Body: " + response_body);
        
 
@@ -322,10 +329,10 @@ namespace duckdb {
         bind_data->columns = apiSchema.parameters.columns;
         bind_data->rowcount = apiSchema.objects;
 
-        std::cout << "\tSchema from API" << std::endl;
+        // std::cout << "\tSchema from API" << std::endl;
         logger.LOG_INFO("Schema from API");
         for (auto &column : apiSchema.parameters.columns) {
-            std::cout << "\t\t" << column.name << ": " << column.type.ToString() <<  std::endl;
+            // std::cout << "\t\t" << column.name << ": " << column.type.ToString() <<  std::endl;
             logger.LOG_INFO(column.name + ": " + column.type.ToString());
             names.push_back(column.name);
             return_types.push_back(column.type);
@@ -337,7 +344,7 @@ namespace duckdb {
 
 
     static void rest_api_table_function(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
-        std::cout << "\n## Executing Simple Table Function ##\n" << std::endl;
+        std::cout << "\n## Step 4: Executing Simple Table Function ##\n" << std::endl;
         logger.LOG_INFO("Executing Simple Table Function");
        
         /**
@@ -368,7 +375,7 @@ namespace duckdb {
 
         if (!options.empty()) {
             for (auto &option : options) {
-                std::cout << "  " << option.first << " = " << option.second << std::endl;
+                // std::cout << "  " << option.first << " = " << option.second << std::endl;
                 logger.LOG_INFO("  " + option.first + " = " + option.second);
             }
         }
@@ -378,22 +385,22 @@ namespace duckdb {
             logger.LOG_ERROR("No API provided. Skipping rest call");
             return;
         } else {
-            std::cout << "querying API: " << api << std::endl;
+            // std::cout << "querying API: " << api << std::endl;
             logger.LOG_INFO("querying API: " + api);
 
         }
 
         auto current_query = context.GetCurrentQuery();
-        std::cout << "Query: " << current_query.c_str() << std::endl;
+        // std::cout << "Query: " << current_query.c_str() << std::endl;
         logger.LOG_INFO("Query: " + current_query);
 
         if (helpers::startsWithCaseInsensitive(current_query, "CREATE OR REPLACE TABLE")){
-            std::cout << "removing CREATE OR REPLACE TABLE statement from query" << std::endl;
+            // std::cout << "removing CREATE OR REPLACE TABLE statement from query" << std::endl;
             logger.LOG_INFO("removing CREATE OR REPLACE TABLE statement from query");
             helpers::removeBeforeSelect(current_query);
         }
         
-        std::cout << "Updated query: " << current_query.c_str() << std::endl;
+        // std::cout << "Updated query: " << current_query.c_str() << std::endl;
         logger.LOG_INFO("Updated query: " + current_query);
 
         Parser p;
@@ -403,7 +410,7 @@ namespace duckdb {
 
 
 
-        std::cout << "Select statement: " << s->ToString() << std::endl;
+        // std::cout << "Select statement: " << s->ToString() << std::endl;
         logger.LOG_INFO("Select statement: " + s->ToString());
         auto select_statement = static_cast<duckdb::SelectStatement*>(s.get());
         auto where = select_statement->node.get();
@@ -411,21 +418,21 @@ namespace duckdb {
 
 
         if (select_statement->type == duckdb::StatementType::SELECT_STATEMENT){
-            std::cout << "SELECT statement" << std::endl;
+            // std::cout << "SELECT statement" << std::endl;
             logger.LOG_INFO("SELECT statement");
             auto &select = select_statement->node->Cast<SelectNode>();
 
-            std::cout << "Where: " << where->ToString() << std::endl;
+            // std::cout << "Where: " << where->ToString() << std::endl;
             logger.LOG_INFO("Where: " + where->ToString());
             // The WHERE clause is typically part of the SELECT node, not a direct member of SelectStatement.
             // Cast the query node to SelectNode to access the WHERE clause
             if (select_statement->node->type == duckdb::QueryNodeType::SELECT_NODE) {
                 auto &select_node = dynamic_cast<duckdb::SelectNode&>(*select_statement->node);
-                std::cout << "Extracting WHERE clause filters from SELECT node:" << std::endl;
+                // std::cout << "Extracting WHERE clause filters from SELECT node:" << std::endl;
                 logger.LOG_INFO("Extracting WHERE clause filters from SELECT node");
                 // Extract filters from the WHERE clause if present
                 if (select_node.where_clause) {
-                    std::cout << "Extracting WHERE clause filters:" << std::endl;
+                    // std::cout << "Extracting WHERE clause filters:" << std::endl;
                     logger.LOG_INFO("Extracting WHERE clause filters");
                     ExtractFilters(*select_node.where_clause);
                 }
@@ -439,7 +446,7 @@ namespace duckdb {
 
         auto s_count = p.statements.size();
 
-        std::cout << "Number of statements: " << s_count << std::endl;
+        // std::cout << "Number of statements: " << s_count << std::endl;
         logger.LOG_INFO("Number of statements: " + std::to_string(s_count));
         
 
@@ -452,14 +459,14 @@ namespace duckdb {
         vector<string> select_column_names;
 
         for (auto &column : select_list) {
-            std::cout << "column: " << column.get()->GetName() << std::endl;
+            // std::cout << "column: " << column.get()->GetName() << std::endl;
             logger.LOG_INFO("pushing column: " + column.get()->GetName());
             select_column_names.push_back(column.get()->GetName());
             // std::cout << "type: " << column.type.ToString() << std::endl;
         }
 
         if (helpers::contains(select_column_names, "count_star()")) {
-            std::cout << "count_star() found. Returning count of rows." << std::endl;
+            // std::cout << "count_star() found. Returning count of rows." << std::endl;
             logger.LOG_INFO("count_star() found. Returning count of rows.");
             output.SetCardinality(1);
             output.SetValue(0, 0, 1);
@@ -468,7 +475,7 @@ namespace duckdb {
         }
 
         if (helpers::contains(select_column_names, "*")) {
-            std::cout << "SELECT '*' found. OK if number of columns is less than api limit, else throw error!" << std::endl;
+            // std::cout << "SELECT '*' found. OK if number of columns is less than api limit, else throw error!" << std::endl;
             logger.LOG_INFO("SELECT '*' found. OK if number of columns is less than api limit, else throw error!");
         }
 
@@ -478,9 +485,9 @@ namespace duckdb {
             // && select_node.modifiers[0]->type == ResultModifierType::ORDER_MODIFIER &&
             // select_node.modifiers.size() == 1) {
             
-            std::cout << "Modifiers found!! " << std::endl;
+            // std::cout << "Modifiers found!! " << std::endl;
             logger.LOG_INFO("Modifiers found!!");
-            std::cout << "Number of modifiers: " << select_node.modifiers.size() << std::endl;
+            // std::cout << "Number of modifiers: " << select_node.modifiers.size() << std::endl;
             logger.LOG_INFO("Number of modifiers: " + std::to_string(select_node.modifiers.size()));
 
             for (auto &modifier : select_node.modifiers) {
@@ -488,24 +495,24 @@ namespace duckdb {
                 if(modifier->type == ResultModifierType::ORDER_MODIFIER) {
                     auto &order = modifier->Cast<OrderModifier>();
                     for (auto &o : order.orders) {
-                        std::cout << "order column: " << o.expression.get()->GetName() << std::endl;
+                        // std::cout << "order column: " << o.expression.get()->GetName() << std::endl;
                         logger.LOG_INFO("order column: " + o.expression.get()->GetName());
 
                         switch (o.type) {
                             case OrderType::ASCENDING:
-                                std::cout << "order type: ASCENDING" << std::endl;
+                                // std::cout << "order type: ASCENDING" << std::endl;
                                 logger.LOG_INFO("order type: ASCENDING");
                                 break;
                             case OrderType::DESCENDING:
-                                std::cout << "order type: DESCENDING" << std::endl;  
+                                // std::cout << "order type: DESCENDING" << std::endl;  
                                 logger.LOG_INFO("order type: DESCENDING");
                                 break;                      
                             case OrderType::INVALID:
-                                std::cout << "order type: INVALID" << std::endl;
+                                // std::cout << "order type: INVALID" << std::endl;
                                 logger.LOG_ERROR("order type: INVALID");
                                 break;
                             default:
-                                std::cout << "order type: UNKNOWN, so using ASCENDING" << std::endl;
+                                // std::cout << "order type: UNKNOWN, so using ASCENDING" << std::endl;
                                 logger.LOG_INFO("order type: UNKNOWN, so using ASCENDING");
                                 break;
                         }
@@ -516,22 +523,22 @@ namespace duckdb {
 
                 if (modifier->type == ResultModifierType::LIMIT_MODIFIER ) {
                     auto &limit = modifier->Cast<LimitModifier>();
-                    std::cout << "LIMIT found!! " << std::endl;
+                    // std::cout << "LIMIT found!! " << std::endl;
                     logger.LOG_INFO("LIMIT found!!");
-                    std::cout << "Limit: " << limit.limit.get()->GetName() << std::endl;
+                    // std::cout << "Limit: " << limit.limit.get()->GetName() << std::endl;
                     logger.LOG_INFO("Limit: " + limit.limit.get()->GetName());
                 }
 
                 if (modifier->type == ResultModifierType::DISTINCT_MODIFIER ) {
                     auto &distinct = modifier->Cast<DistinctModifier>();
 
-                    std::cout << "DISTINCT found!! " << std::endl;
+                    // std::cout << "DISTINCT found!! " << std::endl;
                     logger.LOG_INFO("DISTINCT found!!");
                     auto &targets = distinct.distinct_on_targets;
-                    std::cout << "Number of distinct targets: " << targets.size() << std::endl;
+                    // std::cout << "Number of distinct targets: " << targets.size() << std::endl;
                     logger.LOG_INFO("Number of distinct targets: " + std::to_string(targets.size()));
                     for (auto &target : targets) {
-                        std::cout << "distinct target: " << target.get()->GetName() << std::endl;
+                        // std::cout << "distinct target: " << target.get()->GetName() << std::endl;
                         logger.LOG_INFO("distinct target: " + target.get()->GetName());
                     }
                 }
@@ -542,7 +549,7 @@ namespace duckdb {
 
         }
 
-        std::cout << "Number of statements: " << p.statements.size() << std::endl;
+        // std::cout << "Number of statements: " << p.statements.size() << std::endl;
         logger.LOG_INFO("Number of statements: " + std::to_string(p.statements.size()));
 
         auto config = findConfigByName(cfg, api) ;
@@ -552,16 +559,16 @@ namespace duckdb {
             logger.LOG_ERROR("No configuration found for API: " + api);
             return;
         } else {
-            std::cout << "Using configuration: " << config->name << std::endl;
+            // std::cout << "Using configuration: " << config->name << std::endl;
             logger.LOG_INFO("Using configuration: " + config->name);
-            std::cout << "host: " << config->config.host << std::endl;
+            // std::cout << "host: " << config->config.host << std::endl;
             logger.LOG_INFO("host: " + config->config.host);
         }
 
         std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.data.uri;
         logger.LOG_INFO("API URL: " + api_url);
 
-        std::cout << "API URL: " << api_url << std::endl;
+        // std::cout << "API URL: " << api_url << std::endl;
 
         WebRequest request = WebRequest(api_url);
 

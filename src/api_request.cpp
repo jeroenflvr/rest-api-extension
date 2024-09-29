@@ -10,6 +10,7 @@
 #include <api_request.hpp>
 #include <rest_api_config.hpp>
 
+#include "logger.hpp"
 
 using json = nlohmann::json;
  
@@ -23,7 +24,8 @@ std::string WebRequest::queryAPI(const std::string *body) {
     CURLcode res;
     std::string readBuffer;
  
-    std::cout << "executing WebRequest::queryAPI" << std::endl;
+    //std::cout << "executing WebRequest::queryAPI" << std::endl;
+    logger.LOG_INFO("Executing WebRequest::queryAPI");
     // std::string auth_header = "Authorization: Bearer ";
     // auth_header += token;
 

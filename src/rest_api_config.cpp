@@ -7,6 +7,8 @@
 #include <nlohmann/json.hpp>
 #include "rest_api_config.hpp"
 
+#include "logger.hpp"
+
 using json = nlohmann::json;
 
 using ConfigList = std::vector<rest_api_config::ConfigItem>;
@@ -76,15 +78,14 @@ namespace rest_api_config {
         }
 
         for (const auto& item : configList) {
-            std::cout << "Name: " << item.name << '\n';
-            std::cout << "Host: " << item.config.host << '\n';
-            std::cout << "Port: " << item.config.port << '\n';
-            std::cout << "Root URI: " << item.config.root_uri << '\n';
+            logger.LOG_INFO("Name: " + item.name);
+            logger.LOG_INFO("Host: " + item.config.host);
+            logger.LOG_INFO("Port: " + std::to_string(item.config.port));
+            logger.LOG_INFO("Root URI: " + item.config.root_uri);
 
-            std::cout << "Endpoints:\n";
-            std::cout << "  Data URI: " << item.config.endpoints.data.uri << '\n';
-            std::cout << "  Schema URI: " << item.config.endpoints.schema.uri << '\n';
-            std::cout << "--------------------------\n";
+            logger.LOG_INFO("Endpoints:");
+            logger.LOG_INFO("  Data URI: " + item.config.endpoints.data.uri);
+            logger.LOG_INFO("  Schema URI: " + item.config.endpoints.schema.uri);
         }
 
         return configList;
