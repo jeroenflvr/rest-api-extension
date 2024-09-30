@@ -120,12 +120,13 @@ namespace duckdb {
         auto api = bind_data.api;
         std::cout << "API from bind data in INIT: " << api << std::endl;        
 
-        auto rest_api_ir = process_query(api, context, current_query);
+        auto query_ir = process_query(api, context, current_query);
         
         auto result = make_uniq<SimpleData>();
         result->offset = 0;
         result->filters = input.filters;
         result->column_ids = input.column_ids;
+        result->query_ir = query_ir;
         return std::move(result);
     }
     
@@ -249,6 +250,17 @@ namespace duckdb {
 
 
         auto &data_p = data.global_state->Cast<SimpleData>();
+
+        auto query_ir = data_p.query_ir;
+
+        // check if we have everything we need
+        std::cout << "Query IR LIMIT in table function: " << query_ir.limit << std::endl;
+        for (auto &o : query_ir.order_by) {
+            logger.LOG_INFO("Order by: " + o.column);
+            std::cout << "\tOrder by column: " << o.column << std::endl;
+            std::cout << "\tOrder by ascending: " << o.ascending << std::endl;
+        }
+
 
 
         idx_t data_queries = 1;

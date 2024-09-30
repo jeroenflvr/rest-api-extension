@@ -31,15 +31,7 @@ namespace duckdb {
         Schema parameters;
     };
 
-    struct BindArguments : public TableFunctionData {
-        string item_name;
-        vector<unique_ptr<Expression>> filters;
-        vector<std::pair<string, string>> options;
-        string api;
-        std::vector<ColumnType> columns;
-        int rowcount;
-        // idx_t estimated_cardinality; // Optional, used for cardinality estimation in statistics
-    };
+
 
     struct RACondition {
         std::string left;
@@ -71,8 +63,18 @@ namespace duckdb {
         idx_t offset;
         optional_ptr<TableFilterSet> filters;
         vector<column_t> column_ids;    
+        QueryIR query_ir;
     };
 
+    struct BindArguments : public TableFunctionData {
+        string item_name;
+        vector<unique_ptr<Expression>> filters;
+        vector<std::pair<string, string>> options;
+        string api;
+        std::vector<ColumnType> columns;
+        int rowcount;
+        // idx_t estimated_cardinality; // Optional, used for cardinality estimation in statistics
+    };
 
     std::string GetRestApiConfigFile(ClientContext &context);
 
