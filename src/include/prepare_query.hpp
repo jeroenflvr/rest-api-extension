@@ -1,3 +1,4 @@
+#pragma once
 #include "duckdb.hpp"
 #include <string>
 #include <iostream>

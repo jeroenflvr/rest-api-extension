@@ -29,6 +29,7 @@ set(EXTENSION_SOURCES
       src/extract_filters.cpp
       src/prepare_query.cpp
       src/logger.cpp
+      src/models.cpp
 )
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})

@@ -34,7 +34,7 @@
 #include <cstdio>     // For std::remove
 #include <fstream>    // For std::ofstream
 
-#include "nlohmann/json.hpp" 
+// #include "nlohmann/json.hpp" 
 #include <algorithm> // For std::find_if
 
 #include "helpers.hpp"
@@ -48,102 +48,9 @@
 #include <openssl/opensslv.h>
 
 // using namespace std;
-using json = nlohmann::json;
+// using json = nlohmann::json;
 
 namespace duckdb {
-
-    struct ColumnType {
-        std::string name;
-        LogicalType type;
-        std::string json_type;
-    };
-
-    struct Schema {
-        std::vector<ColumnType> columns;
-    };
-
-    struct ApiSchema {
-        int objects;
-        std::string name;
-        std::string access;
-        Schema parameters;
-    };
-
-
-    LogicalType JsonToDuckDBType(const std::string& type) {
-        if (type == "number") {
-            // std::cout << "Converting JSON number to DuckDB DOUBLE\n";
-            return LogicalType::DOUBLE;  // Can be INTEGER if preferred
-        } else if (type == "integer") {
-            return LogicalType::INTEGER;
-        } else if (type == "string") {
-            return LogicalType::VARCHAR;
-        } else if (type == "boolean") {
-            return LogicalType::BOOLEAN;
-        } else if (type == "array") {
-            return LogicalType::LIST(LogicalType::VARCHAR);
-        }
-
-        return LogicalType::UNKNOWN;
-    }
-
-
-    ApiSchema parseJson(const std::string& jsonString) {
-        ApiSchema apiSchema;
-        try {
-            json jsonObj = json::parse(jsonString);
-            
-            apiSchema.objects = jsonObj.at("objects").get<int>();
-            apiSchema.name = jsonObj.at("name").get<std::string>();
-            apiSchema.access = jsonObj.at("access").get<std::string>();
-
-            for (const auto& param : jsonObj.at("parameters")) {
-                ColumnType p;
-                p.name = param.at("name").get<std::string>();
-                p.type = JsonToDuckDBType(param.at("type").get<std::string>());
-                p.json_type = param.at("type").get<std::string>(); 
-                apiSchema.parameters.columns.push_back(p);  
-            }
-        } catch (const json::exception& e) {
-            std::cerr << "JSON parsing error: " << e.what() << "\n";
-        }
-        
-        return apiSchema;
-    }
-
-
-    struct SimpleData : public GlobalTableFunctionState {
-        SimpleData() : offset(0) {
-        }
-        idx_t offset;
-        optional_ptr<TableFilterSet> filters;
-        vector<column_t> column_ids;    
-    };
-
-
-    std::string GetRestApiConfigFile(ClientContext &context) {
-
-        std::string name = "rest_api_config_file";
-
-		Value config_file;
-		if (!context.TryGetCurrentSetting(name, config_file) ) {
-			throw InvalidInputException("Need the parameters damnit");
-		}
-        // std::cout << "\tOption value from config: " << config_file.ToString() << std::endl;
-        return config_file.ToString();
-        
-    }
-
-
-    struct BindArguments : public TableFunctionData {
-        string item_name;
-        vector<unique_ptr<Expression>> filters;
-        vector<std::pair<string, string>> options;
-        string api;
-        std::vector<ColumnType> columns;
-        int rowcount;
-        // idx_t estimated_cardinality; // Optional, used for cardinality estimation in statistics
-    };
 
 
     static void PushdownComplexFilter(ClientContext &context, LogicalGet &get, FunctionData *bind_data_p,
