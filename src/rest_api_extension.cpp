@@ -111,21 +111,6 @@ namespace duckdb {
         return apiSchema;
     }
 
-    rest_api_config::ConfigItem* findConfigByName(rest_api_config::ConfigList& configList, const std::string& name) {
-
-        auto it = std::find_if(configList.begin(), configList.end(),
-            [&name](const rest_api_config::ConfigItem& item) {
-                return item.name == name;
-            });
-
-        if (it != configList.end()) {
-            return  &(*it); // this is not a pointer, it's a reference
-            // return &it->config; // Return a pointer to the config if found
-        } else {
-            return nullptr; 
-        }
-    }
-
 
     struct SimpleData : public GlobalTableFunctionState {
         SimpleData() : offset(0) {
@@ -223,8 +208,12 @@ namespace duckdb {
         }
         auto current_query = context.GetCurrentQuery();
         std::cout << "init query: " << current_query << std::endl;
-         
-        auto rest_api_ir = process_query(context, current_query);
+
+        auto &bind_data = input.bind_data->Cast<BindArguments>();
+        auto api = bind_data.api;
+        std::cout << "API from bind data in INIT: " << api << std::endl;        
+
+        auto rest_api_ir = process_query(api, context, current_query);
         
         auto result = make_uniq<SimpleData>();
         result->offset = 0;
@@ -297,9 +286,9 @@ namespace duckdb {
         logger.LOG_INFO("Config file: " + config_file);
         // std::cout << "\tConfig file: " << config_file << std::endl;
 
-        auto cfg = rest_api_config::load_config(config_file);
         auto &api = bind_data->api;
-        auto config = findConfigByName(cfg, api) ;
+        auto cfg = rest_api_config::load_config(config_file, api);
+        auto config = rest_api_config::findConfigByName(cfg, api) ;
 
         if (!config) {
             std::cerr << "\tNo configuration found for API: " << api << std::endl;
@@ -351,7 +340,6 @@ namespace duckdb {
 
         auto config_file = GetRestApiConfigFile(context);
 
-        auto cfg = rest_api_config::load_config(config_file);
 
         auto &data_p = data.global_state->Cast<SimpleData>();
 
@@ -367,6 +355,7 @@ namespace duckdb {
 
         auto &options = bind_data.options;
         auto &api = bind_data.api;
+        auto cfg = rest_api_config::load_config(config_file, api);
 
         if (!options.empty()) {
             for (auto &option : options) {

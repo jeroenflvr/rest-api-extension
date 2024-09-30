@@ -35,6 +35,7 @@ namespace rest_api_config {
     using ConfigList = std::vector<ConfigItem>;
 
 
-    ConfigList load_config(std::string filename);
+    ConfigList load_config(std::string filename, std::string &api_name);
     std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str);
+    ConfigItem* findConfigByName(ConfigList& configList, const std::string& name);
 }

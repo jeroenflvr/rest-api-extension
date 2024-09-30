@@ -49,7 +49,7 @@ namespace rest_api_config {
         return options;
     }
     
-    ConfigList load_config(std::string filename) {
+    ConfigList load_config(std::string filename, std::string &api_name) {
         std::ifstream file(filename);
         if (!file.is_open()) {
             std::cerr << "Unable to open config.json file.\n";
@@ -92,6 +92,19 @@ namespace rest_api_config {
     }
 
 
+    ConfigItem* findConfigByName(ConfigList& configList, const std::string& name) {
 
+        auto it = std::find_if(configList.begin(), configList.end(),
+            [&name](const ConfigItem& item) {
+                return item.name == name;
+            });
+
+        if (it != configList.end()) {
+            return  &(*it); // this is not a pointer, it's a reference
+            // return &it->config; // Return a pointer to the config if found
+        } else {
+            return nullptr; 
+        }
+    }
     
 }

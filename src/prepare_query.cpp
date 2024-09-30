@@ -14,8 +14,10 @@
 
 namespace duckdb {
     
-    QueryIR process_query(ClientContext &context, const std::string& query_string) {
+    QueryIR process_query(std::string &api_name, ClientContext &context, const std::string& query_string) {
         std::cout << "Processing query: " << query_string << std::endl;
+        std::cout << "API name: " << api_name << std::endl;
+        
         QueryIR query_ir;
         return query_ir;
     }    

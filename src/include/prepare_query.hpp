@@ -4,5 +4,5 @@
 #include "models.hpp"
 
 namespace duckdb {
-   QueryIR  process_query(ClientContext &context, const std::string& query_string);    
+   QueryIR  process_query(std::string &api_name, ClientContext &context, const std::string& query_string);    
 }
