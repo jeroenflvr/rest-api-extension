@@ -261,8 +261,6 @@ namespace duckdb {
             std::cout << "\tOrder by ascending: " << o.ascending << std::endl;
         }
 
-
-
         idx_t data_queries = 1;
         if (data_p.offset >= data_queries) {
             return;
@@ -272,160 +270,16 @@ namespace duckdb {
         auto &filters = data_p.filters;
         auto &column_ids = data_p.column_ids;
 
-        auto &options = bind_data.options;
-        auto &api = bind_data.api;
-        auto cfg = rest_api_config::load_config(config_file, api);
+        // auto &options = bind_data.options;
+        // auto &api = bind_data.api;
+        // auto cfg = rest_api_config::load_config(config_file, api);
 
-        if (!options.empty()) {
-            for (auto &option : options) {
-                logger.LOG_INFO("  " + option.first + " = " + option.second);
-            }
-        }
+        // auto cfg = query_ir.cfg;
 
-        if (api.empty()) {
-            std::cerr << "No API provided. Skipping rest call." << std::endl;
-            logger.LOG_ERROR("No API provided. Skipping rest call");
-            return;
-        } else {
-            logger.LOG_INFO("querying API: " + api);
-
-        }
-
-        auto current_query = context.GetCurrentQuery();
-        logger.LOG_INFO("Query: " + current_query);
-
-        if (helpers::startsWithCaseInsensitive(current_query, "CREATE OR REPLACE TABLE")){
-            logger.LOG_INFO("removing CREATE OR REPLACE TABLE statement from query");
-            helpers::removeBeforeSelect(current_query);
-        }
-        
-        logger.LOG_INFO("Updated query: " + current_query);
-
-        Parser p;
-	    p.ParseQuery(current_query);
-
-        auto s = CreateViewInfo::ParseSelect(current_query);
-
-        logger.LOG_INFO("Select statement: " + s->ToString());
-        auto select_statement = static_cast<duckdb::SelectStatement*>(s.get());
-        auto where = select_statement->node.get();
+        auto config = query_ir.config;
 
 
-        if (select_statement->type == duckdb::StatementType::SELECT_STATEMENT){
-            logger.LOG_INFO("SELECT statement");
-            auto &select = select_statement->node->Cast<SelectNode>();
-
-            logger.LOG_INFO("Where: " + where->ToString());
-            // The WHERE clause is typically part of the SELECT node, not a direct member of SelectStatement.
-            // Cast the query node to SelectNode to access the WHERE clause
-            if (select_statement->node->type == duckdb::QueryNodeType::SELECT_NODE) {
-                auto &select_node = dynamic_cast<duckdb::SelectNode&>(*select_statement->node);
-                logger.LOG_INFO("Extracting WHERE clause filters from SELECT node");
-                if (select_node.where_clause) {
-                    logger.LOG_INFO("Extracting WHERE clause filters");
-                    ExtractFilters(*select_node.where_clause);
-
-                }
-                
-            }
-
-        }
-
-
-        auto s_count = p.statements.size();
-
-        logger.LOG_INFO("Number of statements: " + std::to_string(s_count));
-        
-        auto &select = p.statements[0]->Cast<SelectStatement>();
-        
-        auto &select_node = select.node->Cast<SelectNode>();
-
-        auto select_list = std::move(select_node.select_list);
-
-        vector<string> select_column_names;
-
-        for (auto &column : select_list) {
-            logger.LOG_INFO("pushing column: " + column.get()->GetName());
-            select_column_names.push_back(column.get()->GetName());
-        }
-
-        if (helpers::contains(select_column_names, "count_star()")) {
-            logger.LOG_INFO("count_star() found. Returning count of rows.");
-            output.SetCardinality(1);
-            output.SetValue(0, 0, 1);
-            data_p.offset++;
-            return;
-        }
-
-        if (helpers::contains(select_column_names, "*")) {
-            logger.LOG_INFO("SELECT '*' found. OK if number of columns is less than api limit, else throw error!");
-        }
-
-        if (!select_node.modifiers.empty()) {
-            
-            
-            logger.LOG_INFO("Modifiers found!!");
-            logger.LOG_INFO("Number of modifiers: " + std::to_string(select_node.modifiers.size()));
-
-            for (auto &modifier : select_node.modifiers) {
-
-                if(modifier->type == ResultModifierType::ORDER_MODIFIER) {
-                    auto &order = modifier->Cast<OrderModifier>();
-                    for (auto &o : order.orders) {
-                        logger.LOG_INFO("order column: " + o.expression.get()->GetName());
-
-                        switch (o.type) {
-                            case OrderType::ASCENDING:
-                                logger.LOG_INFO("order type: ASCENDING");
-                                break;
-                            case OrderType::DESCENDING:
-                                logger.LOG_INFO("order type: DESCENDING");
-                                break;                      
-                            case OrderType::INVALID:
-                                logger.LOG_ERROR("order type: INVALID");
-                                break;
-                            default:
-                                logger.LOG_INFO("order type: UNKNOWN, so using ASCENDING");
-                                break;
-                        }
-
-                    }                    
-                }
-
-                if (modifier->type == ResultModifierType::LIMIT_MODIFIER ) {
-                    auto &limit = modifier->Cast<LimitModifier>();
-                    logger.LOG_INFO("LIMIT found!!");
-                    logger.LOG_INFO("Limit: " + limit.limit.get()->GetName());
-                }
-
-                if (modifier->type == ResultModifierType::DISTINCT_MODIFIER ) {
-                    auto &distinct = modifier->Cast<DistinctModifier>();
-
-                    logger.LOG_INFO("DISTINCT found!!");
-                    auto &targets = distinct.distinct_on_targets;
-                    logger.LOG_INFO("Number of distinct targets: " + std::to_string(targets.size()));
-                    for (auto &target : targets) {
-                        logger.LOG_INFO("distinct target: " + target.get()->GetName());
-                    }
-                }
-            }
-
-        }
-
-        logger.LOG_INFO("Number of statements: " + std::to_string(p.statements.size()));
-
-        auto config = findConfigByName(cfg, api) ;
-
-        if (!config) {
-            std::cerr << "No configuration found for API: " << api << std::endl;
-            logger.LOG_ERROR("No configuration found for API: " + api);
-            return;
-        } else {
-            logger.LOG_INFO("Using configuration: " + config->name);
-            logger.LOG_INFO("host: " + config->config.host);
-        }
-
-        std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.data.uri;
+        std:string api_url = "https://" + config.config.host + ":" + std::to_string(config.config.port) + "/" + config.config.root_uri + "/" + config.config.endpoints.data.uri;
         logger.LOG_INFO("API URL: " + api_url);
 
         WebRequest request = WebRequest(api_url);

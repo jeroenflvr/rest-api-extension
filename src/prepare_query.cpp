@@ -56,6 +56,7 @@ namespace duckdb {
 
         auto config_file = GetRestApiConfigFile(context);
         auto cfg = rest_api_config::load_config(config_file, api_name);
+
         
         logger.LOG_INFO("Updated query: " + current_query);
 
@@ -177,7 +178,7 @@ namespace duckdb {
 
         logger.LOG_INFO("Number of statements: " + std::to_string(p.statements.size()));
 
-        auto config = findConfigByName(cfg, api_name) ;
+        auto config = rest_api_config::findConfigByName(cfg, api_name) ;
 
         if (!config) {
             std::cerr << "No configuration found for API: " << api_name << std::endl;
@@ -188,6 +189,8 @@ namespace duckdb {
             logger.LOG_INFO("host: " + config->config.host);
         }
 
+        query_ir.config = *config;
+        query_ir.cfg = cfg;
 
         return query_ir;
     }    

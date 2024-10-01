@@ -9,7 +9,10 @@
 
 #include "nlohmann/json.hpp" 
 
+#include "rest_api_config.hpp"
+
 using json = nlohmann::json;
+
 
 
 namespace duckdb {
@@ -51,6 +54,8 @@ namespace duckdb {
         std::vector<RAOrderBy> order_by;
         size_t limit;
         std::vector<std::string> distinct;
+        rest_api_config::ConfigItem config;
+        std::vector<rest_api_config::ConfigItem> cfg;
         
     };
 
@@ -64,6 +69,8 @@ namespace duckdb {
         optional_ptr<TableFilterSet> filters;
         vector<column_t> column_ids;    
         QueryIR query_ir;
+
+        
     };
 
     struct BindArguments : public TableFunctionData {
