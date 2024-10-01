@@ -196,27 +196,59 @@ namespace duckdb {
         auto &api = bind_data->api;
         auto config = rest_api_config::load_config(config_file, api);
 
+        std::vector<rest_api_config::SchemaEntry> schema;
+        std::vector<ColumnType> columns;
 
-        std:string api_url = "https://" + config.host + ":" + std::to_string(config.port) + "/" + config.root_uri + "/" + config.endpoints.schema.uri;
-        logger.LOG_INFO("API URL: " + api_url);
+        if (!config.schema.empty()){
+            std::cout << "Schema from config, not from endpoint!" << std::endl;
+            schema = config.schema;
+
+            for (auto &entry : schema) {
+                // struct ColumnType {
+                //     std::string name;
+                //     LogicalType type;
+                //     std::string json_type;
+                // };
+
+                ColumnType column = ColumnType{
+                    entry.name,
+                    JsonToDuckDBType(entry.type),
+                    entry.type
+                };
+
+                columns.push_back(column);
+                logger.LOG_INFO(entry.name + ": " + entry.type);
+                std::cout << "\t\t" + entry.name + ": " + entry.type << std::endl;
+                names.push_back(entry.name);
+                return_types.push_back(column.type);
+
+            }
+            bind_data->columns = columns;
+        } else {
+            std::cout << "Schema from endpoint!" << std::endl;
 
 
-        WebRequest request = WebRequest(api_url, "GET");
-        std::string response_body = request.queryAPI();
+            std:string api_url = "https://" + config.host + ":" + std::to_string(config.port) + "/" + config.root_uri + "/" + config.endpoints.schema.uri;
+            logger.LOG_INFO("API URL: " + api_url);
 
-        logger.LOG_INFO("Response Body: " + response_body);
-       
 
-        ApiSchema apiSchema = parseJson(response_body);
+            WebRequest request = WebRequest(api_url, "GET");
+            std::string response_body = request.queryAPI();
 
-        bind_data->columns = apiSchema.parameters.columns;
-        bind_data->rowcount = apiSchema.objects;
+            logger.LOG_INFO("Response Body: " + response_body);
+        
 
-        logger.LOG_INFO("Schema from API");
-        for (auto &column : apiSchema.parameters.columns) {
-            logger.LOG_INFO(column.name + ": " + column.type.ToString());
-            names.push_back(column.name);
-            return_types.push_back(column.type);
+            ApiSchema apiSchema = parseJson(response_body);
+
+            bind_data->columns = apiSchema.parameters.columns;
+            bind_data->rowcount = apiSchema.objects;
+
+            logger.LOG_INFO("Schema from API");
+            for (auto &column : apiSchema.parameters.columns) {
+                logger.LOG_INFO(column.name + ": " + column.type.ToString());
+                names.push_back(column.name);
+                return_types.push_back(column.type);
+            }
         }
 
         return std::move(bind_data); 
