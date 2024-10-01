@@ -30,6 +30,7 @@ namespace rest_api_config {
         int port;
         Endpoints endpoints;
         std::vector<SchemaEntry> schema;
+        int32_t page_size;
     };
 
     Config load_config(std::string filename, const std::string &api_name);

@@ -127,6 +127,8 @@ namespace duckdb {
         result->filters = input.filters;
         result->column_ids = input.column_ids;
         result->query_ir = query_ir;
+        result->last_rowcount = -1;
+        result->page_idx = 1;
         return std::move(result);
     }
     
@@ -273,6 +275,7 @@ namespace duckdb {
         auto &data_p = data.global_state->Cast<SimpleData>();
 
         auto query_ir = data_p.query_ir;
+        auto config = query_ir.config;
 
         // check if we have everything we need
         std::cout << "Query IR LIMIT in table function: " << query_ir.limit << std::endl;
@@ -282,8 +285,13 @@ namespace duckdb {
             std::cout << "\tOrder by ascending: " << o.ascending << std::endl;
         }
 
-        idx_t data_queries = 1;
-        if (data_p.offset >= data_queries) {
+        // idx_t data_queries = 1;
+        // if (data_p.offset >= data_queries) {
+        //     return;
+        // }
+
+        if (data_p.last_rowcount != -1 && data_p.last_rowcount < config.page_size) {
+            std::cout << "All data has been fetched. (last results were smaller than page size)" << std::endl;
             return;
         }
 
@@ -297,10 +305,16 @@ namespace duckdb {
 
         // auto cfg = query_ir.cfg;
 
-        auto config = query_ir.config;
 
+        std::cout << "page size: " << config.page_size << std::endl;
 
-        std:string api_url = "https://" + config.host + ":" + std::to_string(config.port) + "/" + config.root_uri + "/" + config.endpoints.data.uri;
+        std:string api_url = "https://" + config.host + ":" 
+                            + std::to_string(config.port) 
+                            + "/" + config.root_uri 
+                            + "/" + config.endpoints.data.uri
+                            + "?_page="+ std::to_string(data_p.page_idx) 
+                            + "&_limit=" + std::to_string(config.page_size);
+
         logger.LOG_INFO("API URL: " + api_url);
 
         WebRequest request = WebRequest(api_url);
@@ -377,6 +391,8 @@ namespace duckdb {
             ++row_idx;
         }
         data_p.offset++;
+        data_p.page_idx++;
+        data_p.last_rowcount = jsonData.size();
     }
 
     

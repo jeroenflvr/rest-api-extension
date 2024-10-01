@@ -69,8 +69,9 @@ namespace duckdb {
         optional_ptr<TableFilterSet> filters;
         vector<column_t> column_ids;    
         QueryIR query_ir;
+        size_t last_rowcount;
+        idx_t page_idx;
 
-        
     };
 
     struct BindArguments : public TableFunctionData {

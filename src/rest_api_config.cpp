@@ -103,6 +103,13 @@ namespace rest_api_config {
                     logger.LOG_INFO("No schema defined for " + api_name);
                 }
 
+                if (item["config"].contains("page_size")) {
+                    config.page_size = item["config"]["page_size"].get<int>();
+                    logger.LOG_INFO("Page size: " + std::to_string(config.page_size));
+                } else {
+                    config.page_size = 100; // Default page size if not specified
+                }
+
                 // Return the matching config
                 return config;
             }
