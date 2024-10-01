@@ -192,21 +192,10 @@ namespace duckdb {
         // 
         auto config_file = GetRestApiConfigFile(context);
         logger.LOG_INFO("Config file: " + config_file);
-        // std::cout << "\tConfig file: " << config_file << std::endl;
 
         auto &api = bind_data->api;
         auto config = rest_api_config::load_config(config_file, api);
-        // auto config = rest_api_config::findConfigByName(cfg, api) ;
 
-        // if (!config) {
-        //     std::cerr << "\tNo configuration found for API: " << api << std::endl;
-        //     logger.LOG_ERROR("No configuration found for API: " + api);
-        // } else {
-        //     // std::cout << "\t\tUsing configuration: " << config->name << std::endl;
-        //     logger.LOG_INFO("Using configuration: " + api);
-        //     // std::cout << "\t\thost: " << config->config.host << std::endl;
-        //     logger.LOG_INFO("host: " + config.host);
-        // }
 
         std:string api_url = "https://" + config.host + ":" + std::to_string(config.port) + "/" + config.root_uri + "/" + config.endpoints.schema.uri;
         logger.LOG_INFO("API URL: " + api_url);
