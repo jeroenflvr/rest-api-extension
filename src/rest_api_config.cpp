@@ -11,7 +11,7 @@
 
 using json = nlohmann::json;
 
-using ConfigList = std::vector<rest_api_config::ConfigItem>;
+// using ConfigList = std::vector<rest_api_config::ConfigItem>;
 
 
 
@@ -22,7 +22,7 @@ namespace rest_api_config {
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, host, port, root_uri, endpoints)
 
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ConfigItem, name, config)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SchemaEntry, name, type)
 
 
     std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str) {
@@ -49,7 +49,7 @@ namespace rest_api_config {
         return options;
     }
     
-    ConfigList load_config(std::string filename, std::string &api_name) {
+    Config load_config(std::string filename, const std::string &api_name) {
         std::ifstream file(filename);
         if (!file.is_open()) {
             std::cerr << "Unable to open config.json file.\n";
@@ -66,45 +66,52 @@ namespace rest_api_config {
 
         file.close();
 
-        ConfigList configList;
-        try {
-            configList = j.get<ConfigList>();
-        } catch (json::type_error& e) {
-            std::cerr << "Type error during deserialization: " << e.what() << '\n';
-            return {};
-        } catch (json::exception& e) {
-            std::cerr << "Error during deserialization: " << e.what() << '\n';
-            return {};
+        // Iterate over the array of config items
+        for (size_t i = 0; i < j.size(); ++i) {
+            auto& item = j[i];
+
+            // Check if the name matches the provided api_name
+            if (item["name"].get<std::string>() == api_name) {
+                logger.LOG_INFO("Name: " + item["name"].get<std::string>());
+                logger.LOG_INFO("Host: " + item["config"]["host"].get<std::string>());
+                logger.LOG_INFO("Port: " + std::to_string(item["config"]["port"].get<int>()));
+                logger.LOG_INFO("Root URI: " + item["config"]["root_uri"].get<std::string>());
+
+                logger.LOG_INFO("Endpoints:");
+                logger.LOG_INFO("  Data URI: " + item["config"]["endpoints"]["data"]["uri"].get<std::string>());
+                logger.LOG_INFO("  Schema URI: " + item["config"]["endpoints"]["schema"]["uri"].get<std::string>());
+
+                // Check if the "schema" field exists in the current "config"
+                Config config;
+                try {
+                    config = item["config"].get<Config>();
+                } catch (json::type_error& e) {
+                    std::cerr << "Type error during deserialization: " << e.what() << '\n';
+                    return {};
+                } catch (json::exception& e) {
+                    std::cerr << "Error during deserialization: " << e.what() << '\n';
+                    return {};
+                }
+
+                if (item["config"].contains("schema")) {
+                    logger.LOG_INFO("Schema found:");
+                    config.schema = item["config"]["schema"].get<std::vector<SchemaEntry>>();
+                    for (const auto& entry : config.schema) {
+                        logger.LOG_INFO("  Schema Entry - Name: " + entry.name + ", Type: " + entry.type);
+                    }
+                } else {
+                    logger.LOG_INFO("No schema defined for " + api_name);
+                }
+
+                // Return the matching config
+                return config;
+            }
         }
 
-        for (const auto& item : configList) {
-            logger.LOG_INFO("Name: " + item.name);
-            logger.LOG_INFO("Host: " + item.config.host);
-            logger.LOG_INFO("Port: " + std::to_string(item.config.port));
-            logger.LOG_INFO("Root URI: " + item.config.root_uri);
-
-            logger.LOG_INFO("Endpoints:");
-            logger.LOG_INFO("  Data URI: " + item.config.endpoints.data.uri);
-            logger.LOG_INFO("  Schema URI: " + item.config.endpoints.schema.uri);
-        }
-
-        return configList;
+        // If no match is found, return an empty Config object or handle it as needed
+        std::cerr << "No configuration found for API: " << api_name << '\n';
+        return {};
     }
 
-
-    ConfigItem* findConfigByName(ConfigList& configList, const std::string& name) {
-
-        auto it = std::find_if(configList.begin(), configList.end(),
-            [&name](const ConfigItem& item) {
-                return item.name == name;
-            });
-
-        if (it != configList.end()) {
-            return  &(*it); // this is not a pointer, it's a reference
-            // return &it->config; // Return a pointer to the config if found
-        } else {
-            return nullptr; 
-        }
-    }
     
 }

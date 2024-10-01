@@ -34,18 +34,7 @@ namespace duckdb {
 
         std::string current_query = query_string.c_str();
 
-        // struct QueryIR {
-        //     std::string query;
-        //     std::vector<RACondition> conditions;
-        //     std::vector<std::string> columns;
-        //     std::string order_by;
-        //     size_t limit;
-            
-        // };
         QueryIR query_ir;
-
-        
-
 
         if (helpers::startsWithCaseInsensitive(current_query, "CREATE OR REPLACE TABLE")){
             logger.LOG_INFO("removing CREATE OR REPLACE TABLE statement from query");
@@ -55,7 +44,7 @@ namespace duckdb {
         query_ir.query = current_query;
 
         auto config_file = GetRestApiConfigFile(context);
-        auto cfg = rest_api_config::load_config(config_file, api_name);
+        auto config = rest_api_config::load_config(config_file, api_name);
 
         
         logger.LOG_INFO("Updated query: " + current_query);
@@ -119,10 +108,7 @@ namespace duckdb {
             logger.LOG_INFO("Number of modifiers: " + std::to_string(select_node.modifiers.size()));
 
             for (auto &modifier : select_node.modifiers) {
-                // struct RAOrderBy {
-                //     std::string column;
-                //     bool ascending;
-                // };
+
                 RAOrderBy order_by;
 
                 if(modifier->type == ResultModifierType::ORDER_MODIFIER) {
@@ -178,19 +164,8 @@ namespace duckdb {
 
         logger.LOG_INFO("Number of statements: " + std::to_string(p.statements.size()));
 
-        auto config = rest_api_config::findConfigByName(cfg, api_name) ;
 
-        if (!config) {
-            std::cerr << "No configuration found for API: " << api_name << std::endl;
-            logger.LOG_ERROR("No configuration found for API: " + api_name);
-            // return;
-        } else {
-            logger.LOG_INFO("Using configuration: " + config->name);
-            logger.LOG_INFO("host: " + config->config.host);
-        }
-
-        query_ir.config = *config;
-        query_ir.cfg = cfg;
+        query_ir.config = config;
 
         return query_ir;
     }    

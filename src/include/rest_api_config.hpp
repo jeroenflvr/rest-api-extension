@@ -19,23 +19,19 @@ namespace rest_api_config {
         Endpoint schema;
     };
 
+    struct SchemaEntry {
+        std::string name;
+        std::string type;
+    };
 
     struct Config {
         std::string host;
         std::string root_uri;
         int port;
         Endpoints endpoints;
+        std::vector<SchemaEntry> schema;
     };
 
-    struct ConfigItem {
-        std::string name;
-        Config config;
-    };
-
-    using ConfigList = std::vector<ConfigItem>;
-
-
-    ConfigList load_config(std::string filename, std::string &api_name);
+    Config load_config(std::string filename, const std::string &api_name);
     std::vector<std::pair<std::string, std::string>> ParseOptionsFromJSON(const std::string &json_str);
-    ConfigItem* findConfigByName(ConfigList& configList, const std::string& name);
 }

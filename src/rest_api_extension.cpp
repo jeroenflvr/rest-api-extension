@@ -195,20 +195,20 @@ namespace duckdb {
         // std::cout << "\tConfig file: " << config_file << std::endl;
 
         auto &api = bind_data->api;
-        auto cfg = rest_api_config::load_config(config_file, api);
-        auto config = rest_api_config::findConfigByName(cfg, api) ;
+        auto config = rest_api_config::load_config(config_file, api);
+        // auto config = rest_api_config::findConfigByName(cfg, api) ;
 
-        if (!config) {
-            std::cerr << "\tNo configuration found for API: " << api << std::endl;
-            logger.LOG_ERROR("No configuration found for API: " + api);
-        } else {
-            // std::cout << "\t\tUsing configuration: " << config->name << std::endl;
-            logger.LOG_INFO("Using configuration: " + config->name);
-            // std::cout << "\t\thost: " << config->config.host << std::endl;
-            logger.LOG_INFO("host: " + config->config.host);
-        }
+        // if (!config) {
+        //     std::cerr << "\tNo configuration found for API: " << api << std::endl;
+        //     logger.LOG_ERROR("No configuration found for API: " + api);
+        // } else {
+        //     // std::cout << "\t\tUsing configuration: " << config->name << std::endl;
+        //     logger.LOG_INFO("Using configuration: " + api);
+        //     // std::cout << "\t\thost: " << config->config.host << std::endl;
+        //     logger.LOG_INFO("host: " + config.host);
+        // }
 
-        std:string api_url = "https://" + config->config.host + ":" + std::to_string(config->config.port) + "/" + config->config.root_uri + "/" + config->config.endpoints.schema.uri;
+        std:string api_url = "https://" + config.host + ":" + std::to_string(config.port) + "/" + config.root_uri + "/" + config.endpoints.schema.uri;
         logger.LOG_INFO("API URL: " + api_url);
 
 
@@ -279,7 +279,7 @@ namespace duckdb {
         auto config = query_ir.config;
 
 
-        std:string api_url = "https://" + config.config.host + ":" + std::to_string(config.config.port) + "/" + config.config.root_uri + "/" + config.config.endpoints.data.uri;
+        std:string api_url = "https://" + config.host + ":" + std::to_string(config.port) + "/" + config.root_uri + "/" + config.endpoints.data.uri;
         logger.LOG_INFO("API URL: " + api_url);
 
         WebRequest request = WebRequest(api_url);

@@ -54,8 +54,8 @@ namespace duckdb {
         std::vector<RAOrderBy> order_by;
         size_t limit;
         std::vector<std::string> distinct;
-        rest_api_config::ConfigItem config;
-        std::vector<rest_api_config::ConfigItem> cfg;
+        rest_api_config::Config config;
+        // std::vector<rest_api_config::ConfigItem> cfg;
         
     };
 
