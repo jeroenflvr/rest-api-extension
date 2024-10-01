@@ -28,6 +28,8 @@ TODO
 - [ ] async paginated queries => too slow sync
 - [ ] authentication
 - [ ] allow for defining query: parameters, body structure, headers, pagination, ...
+- [ ] cardinality
+
 
 
 ## Building
