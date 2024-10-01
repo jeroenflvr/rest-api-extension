@@ -345,6 +345,10 @@ namespace duckdb {
                     // std::cout << "JSON TYpe Number " << std::endl;
                     // std::cout << "Column Name: " << c.name << std::endl;
                     output.SetValue(col_idx, row_idx, obj[c.name].get<double>()  );
+                } else if (c.json_type == "integer") {
+                    // std::cout << "JSON TYpe Number " << std::endl;
+                    // std::cout << "Column Name: " << c.name << std::endl;
+                    output.SetValue(col_idx, row_idx, obj[c.name].get<int64_t>()  );
                 } else if (c.json_type == "string") {
                     // std::cout << "JSON TYpe STRING " << std::endl;
                     // std::cout << "Column Name: " << c.name << std::endl;
