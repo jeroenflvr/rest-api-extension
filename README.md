@@ -9,7 +9,7 @@ This extension, rest_api_extension, allows you to fetch data from a JSON API.
 
 
 supports:
-- [ ] static schema in api config json
+- [x] static schema in api config json
 - [ ] schema for the schema in api config json
 - [ ] infer schema from the data
 - [ ] add custom headers to the request (ie. Bearer token)
@@ -23,6 +23,11 @@ supports:
 - [x] handle pushdown of select columns, filters (where), count, limit, order_by (bind, init, table_function)
 - [ ] build mongo request
 - [ ] ...
+
+TODO
+- [ ] async paginated queries => too slow sync
+- [ ] authentication
+- [ ] allow for defining query: parameters, body structure, headers, pagination, ...
 
 
 ## Building
