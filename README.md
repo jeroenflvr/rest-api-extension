@@ -13,23 +13,23 @@ supports:
 - [ ] schema for the schema in api config json
 - [ ] infer schema from the data
 - [ ] add custom headers to the request (ie. Bearer token)
-- [ ] authenticate (oauth/oidc) with secrets cache or separate extension? (leaning towards separate extension)
+- [ ] authenticate (oauth/oidc) with secrets cache or separate extension? (separate extension)
 - [x] schema endpoint
 - [x] translate datatypes
 - [ ] async query results
 - [x] set config file location in ~/.duckdbrc
 - [ ] fix unit tests
 - [ ] async support (different endpoints for submitting query, checking status and collecting results)
-- [x] handle pushdown of select columns, filters (where), count, limit, order_by (bind, init, table_function)
+- [x] parse sql statement for later handling pushdown of select columns, filters (where), count, limit, order_by (bind, init, table_function)
 - [ ] build mongo request
 - [ ] ...
 
 TODO
 - [ ] async paginated queries => too slow sync
-- [ ] authentication
-- [ ] allow for defining query: parameters, body structure, headers, pagination, ...
-- [ ] cardinality
-
+- [ ] cardinality / progress
+- [ ] map sql statement tokens to json query
+- [ ] authentication with cache handling
+- [ ] 
 
 
 ## Building
