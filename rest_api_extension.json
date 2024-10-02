@@ -1,0 +1,185 @@
+[
+    {
+        "name": "peeps",
+        "config": {
+            "host": "localhost",
+            "port": 3000,
+            "root_uri": "",
+            "endpoints": {
+                "data": {
+                    "uri": "data"
+                },
+                "schema": {
+                    "uri": "schema"
+                }
+            },
+            "auth": {
+                "user": "test_user",
+                "pass": {
+                    "environ": "PEEPS_PASS"
+                }
+            }, 
+            "async": {
+                "submit": {
+                    "method": "POST",
+                    "uri": "async/submit",
+                    "headers": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer YOUR_TOKEN"
+                        },
+                        {   "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "check": {
+                    "method": "GET",
+                    "uri": "async/check/{id}",
+                    "params": [
+                        {
+                            "key": "id",
+                            "value": "{id}"
+                        }
+                    ]
+                },
+                "fetch": {
+                    "method": "GET",
+                    "uri": "async/fetch/{id}",
+                    "params": [
+                        {
+                            "key": "id",
+                            "value": "{id}"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "name": "animals",
+        "config": {
+            "host": "freetestapi.com",
+            "port": 443,
+            "root_uri": "api",
+            "endpoints": {
+                "data": {
+                    "uri": "v1/animals"
+                },
+                "schema": {
+                    "uri": "site/animals"
+                }
+            }
+        }
+    },
+    {
+        "name": "jsonplaceholder",
+        "config": {
+            "host": "jsonplaceholder.typicode.com",
+            "port": 443,
+            "root_uri": "",
+            "endpoints": {
+                "data": {
+                    "uri": "posts"
+                },
+                "schema": {
+                    "uri": "site/posts"
+                }
+            },
+            "page_size": 23,
+            "schema": [
+                {
+                    "name": "id",
+                    "type": "integer"
+                },
+                {
+                    "name": "userId",
+                    "type": "number"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "body",
+                    "type": "string"
+                }
+            ]
+        }
+
+    },
+    {
+        "name": "cars",
+        "config": {
+            "host": "freetestapi.com",
+            "port": 443,
+            "root_uri": "api",
+            "endpoints": {
+                "data": {
+                    "uri": "v1/cars"
+                },
+                "schema": {
+                    "uri": "site/cars"
+                }
+            },
+            "schema": [
+                {
+                    "name": "id",
+                    "type": "number"
+                },
+                {
+                    "name": "make",
+                    "type": "string"
+                },
+                {
+                    "name": "model",
+                    "type": "string"
+                },
+                {
+                    "name": "year",
+                    "type": "number"
+                },
+                {
+                    "name": "color",
+                    "type": "string"
+                },
+                {
+                    "name": "mileage",
+                    "type": "number"
+                },
+                {
+                    "name": "price",
+                    "type": "number"
+                },
+                {
+                    "name": "fuelType",
+                    "type": "string"
+                },
+                {
+                    "name": "transmission",
+                    "type": "string"
+                },
+                {
+                    "name": "engine",
+                    "type": "string"
+                },
+                {
+                    "name": "horsepower",
+                    "type": "number"
+                },
+                {
+                    "name": "features",
+                    "type": "array"
+                },
+                {
+                    "name": "owners",
+                    "type": "number"
+                },
+                {
+                    "name": "image",
+                    "type": "string"
+                }
+            ]
+        }
+    }
+]

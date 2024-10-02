@@ -7,6 +7,5 @@ testext
 test/python/__pycache__/
 .Rhistory
 animals
-rest_api_extension.json
 tmp/
 rest_api_extension.log

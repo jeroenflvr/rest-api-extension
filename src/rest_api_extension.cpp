@@ -321,7 +321,7 @@ namespace duckdb {
 
         std::string response_body = request.queryAPI();
 
-        // Create a temporary file to store JSON data
+        // Materialize JSON data
         // char tmp_file_path[] = "./tmp/json_data_XXXXXX.json";
         // int fd = mkstemps(tmp_file_path, 5); // 5 characters for ".json" extension
         // if (fd == -1) {
@@ -341,7 +341,15 @@ namespace duckdb {
 
         size_t row_idx = 0;
 
-        output.SetCardinality(jsonData.size());
+        // we could maybe avoid an extra call by setting this to 0 if data size is less than config.page_size
+        auto data_size = jsonData.size();
+        std::cout << "row size: " << data_size << std::endl;
+
+        if (data_size < config.page_size) {
+            output.SetCardinality(0);
+        } else {
+            output.SetCardinality(jsonData.size());
+        }
 
         
 
