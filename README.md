@@ -31,6 +31,28 @@ TODO
 - [ ] authentication with cache handling
 - [ ] 
 
+## design limitations
+Today, we'll focus on bson and a few other api styles for the queries.
+
+We'll define a list of arguments and where you want them located.
+
+argument types:
+    - json body
+    - url query arguments
+    - form data
+
+The above will be valid for all styles of json queries. 
+We need some sort of template or logic to translate our ir to bson.
+
+
+
+1. bson
+MongoDB uses bson.  We need to translate our internal representation to this.
+We want to allow for some flexibility and exceptions, while staying as close as possible to bson.
+
+
+
+
 
 ## Building
 ### Managing dependencies

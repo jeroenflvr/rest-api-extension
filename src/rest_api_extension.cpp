@@ -188,10 +188,12 @@ namespace duckdb {
         // std::cout << std::endl;
 
         // Ensure there is at least one argument
+        // we'll take the first argument as the name of the item.
         // if (input.inputs.size() < 1) {
         //     throw std::runtime_error("Expected at least one argument");
         // }
         // 
+        
         auto config_file = GetRestApiConfigFile(context);
         logger.LOG_INFO("Config file: " + config_file);
 
@@ -206,11 +208,6 @@ namespace duckdb {
             schema = config.schema;
 
             for (auto &entry : schema) {
-                // struct ColumnType {
-                //     std::string name;
-                //     LogicalType type;
-                //     std::string json_type;
-                // };
 
                 ColumnType column = ColumnType{
                     entry.name,
