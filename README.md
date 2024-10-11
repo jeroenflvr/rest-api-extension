@@ -25,7 +25,7 @@ supports:
 - [ ] ...
 
 TODO
-- [ ] async paginated queries => too slow sync
+- [x] async paginated queries => too slow sync
 - [ ] cardinality / progress
 - [ ] map sql statement tokens to json query
 - [ ] authentication with cache handling
